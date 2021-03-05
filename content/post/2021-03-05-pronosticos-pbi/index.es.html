@@ -1,0 +1,91 @@
+---
+title: Prever es Prevalecer (2NDTIME)
+author: Jonatan Pace
+date: '2021-01-21'
+slug: prever-es-pravelecer-2ndtime
+categories: []
+tags: ['PowerBI', 'Pronósticos']
+type: ''
+subtitle: 'Pronósticos de ventas con Power BI'
+image: 'img/pronosticos_bi_portada.png'
+description: 'Power BI es una herramienta de Business Intelligence que nos permite transformar, graficar y analizar datos que provengan de diversas fuentes, entre ellas Excel y bases de datos locales o en la nube. Las visualizaciones que se pueden lograr soy muy atractivas y es relativamente sencillo de utilizar. Esta actividad está orientada a  desarrollar modelos de pronósticos utilizando las herramientas que nos proporciona este interesante software.'
+codefolding_nobutton: false
+codefolding_show: 'show'
+disable_codefolding: false
+output: 
+  blogdown::html_page:
+    toc: true
+    number_sections: true
+    highlight: 'pygments'
+---
+
+<script src="{{< blogdown/postref >}}index.es_files/header-attrs/header-attrs.js"></script>
+
+<div id="TOC">
+<ul>
+<li><a href="#introducción"><span class="toc-section-number">1</span> Introducción</a></li>
+<li><a href="#modelos-de-pronósticos-disponibles"><span class="toc-section-number">2</span> Modelos de Pronósticos disponibles</a></li>
+<li><a href="#serie-temporal"><span class="toc-section-number">3</span> Serie Temporal</a></li>
+<li><a href="#etsaan---suavización-exponencial-de-holt"><span class="toc-section-number">4</span> ETS(AAN) - Suavización Exponencial de Holt</a></li>
+<li><a href="#etsaaa---suavización-exponencial-de-holt-winters"><span class="toc-section-number">5</span> ETS(AAA) - Suavización Exponencial de Holt-Winters</a></li>
+<li><a href="#conclusiones"><span class="toc-section-number">6</span> Conclusiones</a></li>
+<li><a href="#referencias"><span class="toc-section-number">7</span> Referencias</a></li>
+</ul>
+</div>
+
+<div style="text-align: justify">
+
+<p> </p>
+<div id="introducción" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> Introducción</h1>
+<p>Antes de comenzar, es importante destacar que tanto la serie de datos, como los modelos de pronósticos y métricas de performance que utilizaremos a continuación fueron desarrollados en un post anterior, por lo que no entraremos nuevamente en detalle. Si quieres darle una mirada puedes acceder haciendo clic <a href="https://jonatanpace.github.io/post/prever-es-prevalecer/">aquí</a>.</p>
+<p> </p>
+</div>
+<div id="modelos-de-pronósticos-disponibles" class="section level1" number="2">
+<h1><span class="header-section-number">2</span> Modelos de Pronósticos disponibles</h1>
+<p>En el panel de visualizaciones de Power BI podemos encontrar una solapa llamada <em>Analitycs</em> que se habilita cuando graficamos una serie de datos temporales. Dentro de esta tendremos diferentes herramientas gráficas para agregar a nuestra serie como por ejemplo líneas de tendencias, mediana, promedio o percentiles. La que nos interesa y que vamos a explorar en esta actividad es la opción disponible para generar pronósticos.</p>
+<p>Según el sitio oficial powerbi.microsoft.com el método de pronóstico utilizado por el software es el de suavización exponencial, disponible en dos versiones: ETS(AAA) o Holt-Winters Aditivo para series que presentan estacionalidad y ETS(AAN) o Holt para las que no tienen este patrón, es decir que modela solo tendencia y aleatoriedad.</p>
+<p>La herramienta analiza los datos de entrada utilizando funciones de autocorrelación y autocorrelación parcial para determinar qué variante del modelo elegir, si Holt o Holt-Winters pero, si tenemos certeza de la existencia de estacionalidad en nuestra serie, se puede ayudar al algoritmo de decisión al incorporar como parámetro el orden estacional.</p>
+<p>Probamos ambos modelos sobre la serie de datos de ventas que trabajamos en el post anterior. De hecho, aplicamos estos mismos métodos con R, así que será interesante observar las diferencias encontradas.</p>
+<p> </p>
+</div>
+<div id="serie-temporal" class="section level1" number="3">
+<h1><span class="header-section-number">3</span> Serie Temporal</h1>
+<p>La serie corresponde a datos de ventas mensuales de un grupo de productos (familia). A continuación se muestra el gráfico de la serie completa.</p>
+<p><img src="/img/pronosticos_bi_files/ventas_pbi.png" /></p>
+<p>Recordemos que aplicamos el método de <em>Simulación de Pronósticos</em>. Para esto habíamos dividido los datos en dos grupos, el primero para ajustar los modelos y el segundo para pronosticar sobre datos conocidos y así poder calcular el error MAE y MAPE. Esto era clave para poder elegir cuál era el mejor modelo disponible.</p>
+<p> </p>
+</div>
+<div id="etsaan---suavización-exponencial-de-holt" class="section level1" number="4">
+<h1><span class="header-section-number">4</span> ETS(AAN) - Suavización Exponencial de Holt</h1>
+<p>El primer modelo que aplicamos fue el Holt y armamos la siguiente visualización para ajustar y calcular los errores sobre el grupo test.</p>
+<p><img src="/img/pronosticos_bi_files/fit_est_aan.png" />
+ </p>
+<p>Los errores MAE y MAPE calculados sobre el primer semestre del 2008 son similares a los arrojados por los modelos realizados en R, donde obtuvimos para este mismo modelo un MAE de 16642 y un MAPE del 22%.</p>
+<p>El pronóstico de periodos futuros que corresponden al segundo semestre del 2008 se observan en la siguiente visualización.</p>
+<p><img src="/img/pronosticos_bi_files/fc_est_aan.png" /></p>
+<p> </p>
+</div>
+<div id="etsaaa---suavización-exponencial-de-holt-winters" class="section level1" number="5">
+<h1><span class="header-section-number">5</span> ETS(AAA) - Suavización Exponencial de Holt-Winters</h1>
+<p>En el análisis gráfico de la serie temporal habíamos observado que en ciertos periodos pasados se repetían los comportamientos de ventas. Esto se hacía visible realizando gráficos estacionales. Pero lo cierto es que no era tan preponderante, lo que nos hacía dudar de la verdadera existencia de este patrón. De todas maneras vamos a probar modificando el parámetro de estacionalidad para ver que resultados nos arroja el modelo de Holt-Winters.</p>
+<p><img src="/img/pronosticos_bi_files/fit_est_aaa.png" />
+ </p>
+<p>El pronóstico sobre el grupo test es bastante decente hasta mayo del 2008, el último periodo pronosticado (junio) aporta demasiado error al cálculo de las métricas al seguir replicando la estacionalidad del año anterior.
+Los resultados obtenidos no distan demasiado de los que obtuvimos en R en donde registramos un MAE de 21151 y un MAPE de 36.6%.</p>
+<p>Claro está que a juzgar por los errores obtenidos el método que prevalece entre estos dos es el EST(AAN). Pero a fin de satisfacer mi curiosidad vamos a ver los pronósticos arrojados para el segundo semestre del 2008 con el modelo Holt-Winters.</p>
+<p><img src="/img/pronosticos_bi_files/fc_est_aaa.png" />
+ </p>
+<p>Como era de esperar, el modelo ajusta la tendencia y los movimientos a la baja que infiere de los mismos periodos del año anterior.</p>
+</div>
+<div id="conclusiones" class="section level1" number="6">
+<h1><span class="header-section-number">6</span> Conclusiones</h1>
+<p>Si bien no hay control sobre los parámetros de los modelos utilizados, Power BI ofrece una herramienta súper interesante para desarrollar pronósticos de demanda de manera rápida y sencilla, además de visualizar los resultados muy elegantemente. Pero como comentamos en nuestro post anterior, la metodología de simulación de modelos nos permite elegir un método adecuado en función de los errores de pronóstico y mientras más modelos podamos aplicar sobre nuestra serie de datos más comparaciones podemos realizar. Seria más interesante poder contar con más métodos como así también poder jugar un poco con los coeficientes de atenuación de aleatoriedad, tendencia y estacionalidad para ver como afectan a los resultados obtenidos.</p>
+</div>
+<div id="referencias" class="section level1" number="7">
+<h1><span class="header-section-number">7</span> Referencias</h1>
+<ul>
+<li><p><a href="https://powerbi.microsoft.com/es-es/blog/describing-the-forecasting-models-in-power-view/" class="uri">https://powerbi.microsoft.com/es-es/blog/describing-the-forecasting-models-in-power-view/</a></p>
+</div></li>
+</ul>
+</div>

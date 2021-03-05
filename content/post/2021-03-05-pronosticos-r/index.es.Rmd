@@ -1,0 +1,1205 @@
+---
+title: Prever es Prevalecer
+subtitle: 'Aplicación de métodos cuantitativos en pronósticos de ventas'
+author: Jonatan Pace
+date: '2021-01-06'
+slug: prever-es-prevalecer
+categories: []
+tags: ['R', 'Pronósticos']
+type: ''
+Description: 'Si hay un tema que nos ha desvelado desde los comienzos de la humanidad es el de intentar predecir el futuro, pero lo cierto es que todos nuestros pensamientos y toda nuestra arquitectura mental como también los pilares de nuestra civilización descansan sobre el desconocimiento del mismo y es esencial para la vida en sociedad. Imagínense que si conociéramos el futuro desaparecerían los juegos de azar, habría un desinterés general en el deporte y las competiciones, nadie realizaría proyectos si sabe que está por morir, o cosas más graves como la no existencia de los modelos ARIMA. En fin, este post tendrá validez hasta que eso no ocurra.' 
+image: 'img/pronosticos_portada.jpg'
+codefolding_nobutton: false
+codefolding_show: 'show'
+disable_codefolding: false
+output: 
+  blogdown::html_page:
+    toc: true
+    number_sections: true
+    highlight: 'pygments'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo      = TRUE,
+                      message   = FALSE,
+                      warning   = FALSE,
+                      error     = FALSE,
+                      collapse  = TRUE,
+                      fig.align = 'center',
+                      out.width = "80%")
+```
+  <div style="text-align: justify"> 
+  
+&nbsp;
+
+# Presentación del Problema
+
+La idea de este proyecto es la de aplicar conceptos relacionados al análisis de series temporales y explorar algunos métodos de pronósticos.
+
+Los datos con los que trabajaremos corresponden a una serie temporal de ventas reales de distintos ítem para la construcción que pertenecen a una misma familia o grupo de productos. Estos datos fueron registrados entre enero del 2006 y junio del 2008 y están conformado por 3263 observaciones que representan ventas diarias.
+
+A fin de reducir la incertidumbre en los pronósticos vamos a trabajar con demandas acumuladas en el tiempo, es decir, vamos a utilizar ventas mensuales en vez de diarias. Además, como se trata de un grupo de productos y no de productos individuales serán pronósticos agregados. El efecto de la agregación en los pronósticos será la disminución del error ya que la serie resultante compensará las variabilidades.
+
+El enfoque que vamos a abordar será el de *Simulación de Modelos*, esta metodología nos permitirá elegir el modelo más apropiado al comparar el error que cada uno de ellos obtenga.
+
+Los pasos a seguir serán los siguientes:
+
+1. Vamos a dividir la serie histórica (nuestros datos) en dos grupos: el grupo *Train* y el grupo *Test*.
+
+2. Ajustaremos los modelos sobre el grupo *Train*.
+
+3. "Pronosticaremos" los periodos correspondientes al grupo *Test* con cada uno de los modelos ajustados.
+
+4. Calcularemos el error de cada método con respecto a los datos del grupo *Test*.
+
+5. Elegiremos el modelo que obtenga el menor error.
+
+6. Actualizaremos los parámetros del método elegido utilizando los datos de ambos grupos para pronosticar periodos futuros.
+
+&nbsp;
+
+# Métodos de Pronósticos
+
+Los métodos que utilizaremos son los llamados cuantitativos intrínsecos. Estos se basan en  modelar patrones pasados para proyectarlos en el tiempo apoyándose en la suposición de que el pasado puede extenderse hacia el futuro. A diferencia de los métodos cualitativos o cuantitativos extrínsecos, que utilizan variables externas y juicios de personas expertas en el negocio, aquí el éxito en el resultado solo depende de que tan bien los modelos interpreten la información que esconden los datos. 
+
+&nbsp;
+
+## Métodos Simples
+
+La idea de estos métodos es que nos sirvan de base para el desarrollo de otros más complejos. Los vamos a comparar entre si y veremos si los modelos complejos son mejores que los modelos simples, si esto no pasa entonces desarrollar un modelo de mayor complejidad no vale la pena. Dentro de este grupo vamos a probar:
+
+
+- Método del Promedio
+- Método Naïve o Ingenuo
+- Método Naïve Estacional
+- Método Drift
+
+&nbsp;
+
+## Métodos Complejos
+
+Los modelos complejos que vamos a desarrollar son:
+
+- Suavización Exponencial Simple (SES)
+- Suavización Exponencial de dos Parámetros (Holt)
+- Suavización Exponencial de tres Parámetros (Holt-Winters)
+- Modelos ARIMA.
+
+&nbsp;
+
+# Error de Pronósticos (Métricas)
+
+La exactitud de los modelos se medirá usando pronósticos genuinos, esto solo puede hacerse con datos que no hayan sido utilizados para entrenar los modelos, será nuestro grupo *Test*.
+
+Para el cálculo de los errores vamos a utilizar dos métricas ampliamente utilizadas, el MAE y el MAPE:
+
+
+- **Desviación Media Absoluta (MAE: Mean Absolute Error)**: es el valor absoluto de la diferencia entre la demanda real y el pronóstico, dividido el número de periodos $N$. Así un MAE = 100 significa que se espera en promedio un error de 100 unidades en cada periodo pronosticado.
+
+
+$$MAE =  \frac{1}{N}\sum_{t=1}^{N} \mid{Real_{t} - Pronóstico_{t}}\mid$$
+
+- **Error Absoluto Porcentual Medio (MAPE: Mean Absolute Percentage Error)**: es la diferencia entre la demanda real y el pronóstico, expresado como un porcentaje de los valores reales, es decir mide el tamaño absoluto del error en términos porcentuales, por ejemplo un MAPE = 4% significa que se espera un error de un 4% en cada periodo pronosticado.
+
+$$MAPE =  \frac{1}{N}\frac{\sum_{t=1}^{N} \mid{Real_{t} - Pronóstico_{t}}\mid}{Real_{t}}*100$$
+
+&nbsp;
+
+# Carga de Librerías y Datos
+
+Para comenzar con este proyecto vamos a cargar las librerías que vamos a necesitar para manipular y graficar los datos como así también la serie de ventas que analizaremos.
+
+```{r, results = 'hide'}
+# Carga de librerías
+library(tidyverse)
+library(forecast)
+library(lubridate)
+library(tseries)
+library(kableExtra)
+library(formattable)
+library(ggpubr)
+library(zoo)
+
+# Carga de datos
+ventas <- read_csv('datos_ventas.csv')
+ventas %>% head(5)
+```
+
+```{r, echo=FALSE}
+ventas %>% head(5) %>%  
+  kbl(align = 'c') %>% 
+  kable_styling(bootstrap_options = "striped",
+                full_width = F,
+                position = "center")
+```
+
+Antes de seguir avanzando debemos verificar si el tipo de dato para cada columna de la serie es correcto.
+
+```{r}
+ventas %>% glimpse()
+```
+
+Vamos a modificar el tipo de dato del campo `fecha` por uno de tipo *date*.
+
+```{r}
+ventas$fecha <- dmy(ventas$fecha)
+ventas %>% glimpse()
+```
+
+A fin de compensar las variabilidades de ventas diarias, que es como han sido registrado nuestros datos, vamos a optar por acumularlas en meses.
+
+```{r}
+ventas_mes <- ventas %>%
+  group_by(fecha = floor_date(fecha, "month")) %>%
+  summarize(unidades = sum(unidades))
+```
+
+Veamos gráficamente como la serie de ventas mensuales es más estable con respecto a las ventas diarias.
+
+```{r}
+# Ventas diarias
+diaria <- ventas %>% 
+  ggplot(aes(x = fecha, 
+             y = unidades)) +
+  geom_line(color = 'steelblue') +
+  labs(title = 'Ventas Diarias',
+       x     = 'Periodo',
+       y     = 'Unidades') +
+  theme(axis.title.x = element_blank(),
+        plot.title   = element_text(hjust = 0.5))
+
+# Ventas mensuales  
+mensual <- ventas_mes %>% 
+  ggplot(aes(x = fecha, 
+             y = unidades)) +
+  geom_line(color = 'steelblue') +
+  labs(title = 'Ventas Mensuales',
+       x     = 'Periodo',
+       y     = 'Unidades') +
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggarrange(diaria, mensual, ncol = 1, nrow = 2)
+```
+
+&nbsp;
+
+# Análisis Gráfico y Exploración de Patrones
+
+Los gráficos revelan muchas características y comportamientos como patrones, outliers y cambios a través del tiempo. Estas características deben ser incorporadas tanto como sea posible en los modelos de pronósticos, es por esto que utilizaremos diferentes gráficos para tratar de detectar que es lo que caracteriza a nuestros datos.
+
+```{r}
+# Transformamos la serie a un time series object
+ts_ventas <- ts(ventas_mes$unidades,
+                 frequency = 12,
+                 start     = 2006)
+
+autoplot(ts_ventas, color = 'steelblue') +
+  ggtitle('Ventas Mensuales') +
+  labs(x = 'Meses',
+       y = 'Unidades')
+```
+
+A través del gráfico podemos empezar a describir que características presentan los datos:
+
+
+- La serie comienza con un patrón horizontal durante el primer semestre del 2006, entra en una tendencia decreciente hasta enero del 2007. A partir de aquí tiene una tendencia positiva que dura pocos periodos (hasta abril del 2007) para luego volver a entrar un periodo de pendiente negativa hasta finales del 2017. Finalmente se observa un patrón de movimiento horizontal en el último semestre de la serie.
+
+- Con respecto a la estacionalidad no observamos ningún patrón a simple vista, de todas maneras vamos a realizar otros tipos de gráficos para descartar la presencia de la misma.
+
+- No se observa ningún valor atípico que sea extremadamente alto o extremadamente bajo, sin embargo vamos a hacer una prueba para descartar la presencia de outliers.
+
+&nbsp;
+
+## Valores Atípicos
+
+Los valores anormalmente grandes o pequeños, aquellos que se espera que no se repitan en el futuro suelen considerarse valores atípicos u outliers. Los outliers confunden el reconocimiento de patrones y, además, los métodos que utilizaremos no funcionan bien ante la presencia de estos, la idea es modificarlos para hacerlos más consistentes con el resto de las observaciones.
+
+Es importante destacar que no es recomendable reemplazar outliers si no se los analiza en el contexto del negocio interpretando porqué ocurrieron. Para este casos práctico vamos a considerarlos como errores reemplazándolos por el valor sugerido por la función **tsoutliers()** del paquete *forecast*.
+
+```{r}
+tsoutliers(ts_ventas)
+```
+
+La función aplicada considera que no hay valores atípicos en la serie. Al no conocer los detalles que generaron los datos y el contexto del negocio no podemos hacer un mayor análisis al respecto.
+
+&nbsp;
+
+## Gráficos Estacional
+
+Utilizar gráficos estacionales nos permite observar en forma más clara si hay o no presencia de estacionalidad en la serie. 
+
+```{r}
+ts_ventas %>% 
+  ggseasonplot(year.labels      = TRUE,
+               year.labels.left = FALSE
+              ) +
+  labs(title = 'Ventas Mensuales',
+       x     = 'Meses',
+       y     = 'Unidades')
+```
+
+
+Podemos ver que existe un cierto comportamiento estacional:
+
+- Tenemos constantes caídas de ventas en enero, junio, septiembre y diciembre.
+
+- Tenemos constantes aumentos en febrero, mayo, julio.
+
+## Función de Autocorrelación
+
+Este gráfico prueba si las observaciones adyacentes están autocorrelacionadas, es decir, si hay correlación entre la observación 1 con 2, 2 con 3, 3 con 4 y así, esto se conoce como *correlación de lag uno*. 
+Existirá autocorrelación si el coeficiente es significativamente distinto de cero, algo que se puede verificar observando si los picos sobrepasan el límite establecido por la prueba.
+
+```{r}
+# Gráfico de autocorrelación
+ts_ventas %>% 
+  ggAcf(lag.max = 30) +
+  ggtitle('Función de Autocorrelación')
+```
+
+
+Cuando la serie presenta tendencia, la autocorrelación para desfasajes bajos tiende a ser grande y positiva porque las observaciones cercanas en el tiempo también son cercanas en tamaño pero a medida que aumenta el lag o desfasaje la autocorrelación disminuye. Se observa un poco de este comportamiento sobretodo en los primeros 6 lags de cuales los primeros tres son significativamente distintos de cero. Esto sugiere la existencia de una tendencia que no perdura en el tiempo.
+
+Con respecto a la estacionalidad, la curva sinusoidal formada por todos los picos indica cierta presencia de la misma pero sin coeficientes significativos no podemos considerarla como tal.
+
+Si bien no tenemos dudas de la existencia de tendencia en la serie, puede que dos ciclos y medio de datos (observaciones mensuales) dificulte entender si también existe estacionalidad. De todas maneras aplicaremos diferentes métodos que modelan y ajustan estos patrones.
+
+&nbsp;
+
+# Grupo Train y Grupo Test 
+
+Una práctica común para evaluar los modelos de pronósticos es dejarnos las últimas observaciones para comparar lo pronosticado con lo real. Como nosotros estamos interesados en hacer pronósticos a corto plazo vamos a separar la serie en dos dejándonos las últimas 6 observaciones (todas aquellas que corresponden al primer semestre del 2008) para comparar resultados y luego pronosticaremos el segundo semestre de ese mismo año.
+
+```{r}
+# Grupo Train
+ts_train <- window(ts_ventas,
+                   start = c(2006, 1), 
+                   end   = c(2007, 12))
+# Grupo Test
+ts_test <- window(ts_ventas,
+                  start = c(2008, 1))
+```
+
+
+```{r}
+# Grupo Test
+ts_test
+```
+
+&nbsp;
+
+# Modelado
+
+## Métodos Básicos
+
+Los modelos básicos que utilizaremos son los siguientes:
+
+- **Método del Promedio**: el pronóstico de los valores futuros es igual al promedio de los datos históricos.
+
+- **Método Naïve**: el pronóstico de los valores futuros es igual al valor de la última observación.
+
+- **Método Naïve Estacional**: el pronóstico de los valores futuros es igual al valor de la última observación para el mismo periodo pero del año anterior. Así el pronóstico para el mes de enero es igual al valor de enero del año anterior.
+  
+- **Método Drift**: básicamente consiste en dibujar una recta entre la primera y la última observación de la serie y extrapolarla en el tiempo.
+
+### Ajuste de Modelos
+
+```{r}
+# Ajuste de pronosticos basicos 
+mean_fc   <- meanf(ts_train,  h = 6)
+naive_fc  <- rwf(ts_train,    h = 6)
+snaive_fc <- snaive(ts_train, h = 6)
+drift_fc  <- rwf(ts_train,    h = 6, drift = TRUE)
+```
+
+```{r}
+# Gráficos de pronosticos basicos 
+autoplot(ts_train,   series = 'Train') +
+  autolayer(mean_fc$mean,  series = 'Mean') +
+  autolayer(naive_fc$mean, series = 'Naïve') +
+  autolayer(snaive_fc$mean, series = 'SNaïve') +
+  autolayer(drift_fc$mean, series = 'Drift') +
+  guides(colour = guide_legend(title = "Serie")) +
+  labs(title = 'Métodos Simples',
+       subtitle = 'Ajuste de Modelos (Train)',
+       x = 'Mes', 
+       y = 'Unidades') +
+  scale_color_manual(values = c('black',
+                                'red',
+                                'orange',
+                                'violet',
+                                'steelblue'))
+  
+```
+
+
+### Evaluación del error
+
+
+En este punto utilizaremos el set de pruebas (Test) que definimos en un apartado anterior. El resumen de los resultados para los métodos simples es el siguiente:
+
+
+```{r}
+# Gráfico de errores de pronosticos basicos 
+autoplot(ts_train,   series = 'Train') +
+  autolayer(ts_test, series = 'Test') +
+  autolayer(mean_fc$mean,  series = 'Mean') +
+  autolayer(naive_fc$mean, series = 'Naïve') +
+  autolayer(snaive_fc$mean, series = 'SNaïve') +
+  autolayer(drift_fc$mean, series = 'Drift') +
+  guides(colour = guide_legend(title = "Serie")) +
+  labs(title = 'Métodos Simples',
+       subtitle = 'Error sobre el set de prueba (Test)',
+       x = 'Mes', 
+       y = 'Unidades') +
+  scale_color_manual(values = c('black',
+                                'red',
+                                'orange',
+                                'violet',
+                                'gray',
+                                'steelblue'))
+```
+
+
+El método Naïve Estacional se acerca bastante a los datos reales (Test), esto es porque la serie tiene cierta estacionalidad, es decir, se repiten alguno patrones, pero también vimos que las ventas en forma general han disminuido con el tiempo por lo que no captura la caída de los próximos meses.
+El método del promedio sobrestima la demanda, en este caso puede que sea mejor utilizar el promedio del último año para descartar los valores altos del 2006.
+El método Naïve la subestima, solo captura la caída final. Por último el método Drift replica la tendencia a la baja y es que al tomar el primer y último valor para extrapolar una recta no es una buena idea en este caso, nuevamente por los altos valores del 2006.
+
+
+```{r, echo=FALSE}
+metodos <- data.frame('Periodo' = format(as.Date(as.yearmon(time(ts_test))),
+                          "%Y-%m"),
+           'Ventas' = as.matrix(ts_test),
+           'Mean' = round(as.matrix(mean_fc$mean[1:6])),
+           'Error Mean' = round((as.matrix(ts_test)) - as.matrix(mean_fc$mean[1:6])),
+           'Naïve' = round(as.matrix(naive_fc$mean[1:6])),
+           'Error Naïve' = round((as.matrix(ts_test)) - as.matrix(naive_fc$mean[1:6])),
+           'SNaïve' = round(as.matrix(snaive_fc$mean[1:6])),
+           'Error SNaïve' = round((as.matrix(ts_test)) - as.matrix(snaive_fc$mean[1:6])),
+           'Drift' = round(as.matrix(drift_fc$mean[1:6])),
+           'Error Drift' = round((as.matrix(ts_test)) - as.matrix(drift_fc$mean[1:6]))
+          )
+
+metodos%>% kbl(align = 'c') %>% 
+  kable_styling(bootstrap_options = "striped",
+                full_width        = F,
+                position          = "center")  %>% 
+  add_header_above(c('','', "Promedio" = 2,
+                     "Naïve" = 2,
+                     "SNaïve" = 2,
+                     "Drift" = 2)) %>% 
+  add_header_above(c('','', "Resultados de los Métodos Simple" = 8)) %>%  
+  scroll_box(width = "100%")
+```
+
+&nbsp;
+
+
+```{r, echo = FALSE, results = 'hide'}
+accuracy(mean_fc , ts_test)
+
+```
+
+
+```{r, echo=FALSE}
+metodo <- c('Promedio','Naïve', 'SNaïve', 'Drift')
+
+mae <- c(round(accuracy(mean_fc,   ts_test)[2,3]),
+         round(accuracy(naive_fc,  ts_test)[2,3]),
+         round(accuracy(snaive_fc, ts_test)[2,3]),
+         round(accuracy(drift_fc,  ts_test)[2,3])
+        )
+
+mape <- c(
+         round(accuracy(mean_fc,  ts_test)[2,5],1),
+         round(accuracy(naive_fc,  ts_test)[2,5],1),
+         round(accuracy(snaive_fc, ts_test)[2,5],1),
+         round(accuracy(drift_fc,  ts_test)[2,5],1)
+         )
+
+resumen_simples <- data.frame(metodo, mae, mape)
+
+colnames(resumen_simples) <- c('MÉTODO', 'MAE', 'MAPE')
+
+resumen_simples %>% kbl(align = 'c') %>% 
+  kable_styling(bootstrap_options = "striped",
+                full_width        = F,
+                position          = "center") %>% 
+  add_header_above(c("Error de pronósticos sobre el grupo test" = 3)) %>% 
+  column_spec(1:3, width = "3cm")
+  
+```
+
+Tanto el modelo Naïve como el Naïve Estacional tienen un MAE similar, pero el segundo tiene mayor porcentaje de error (35.6%), esto es causado principalmente por la caída abrupta del último periodo.
+
+&nbsp;
+
+## Suavización Exponencial Simple
+
+El primer método de suavización que utilizaremos es el de Suavización Exponencial Simple (SES), muy utilizado para los casos en donde no se ven patrones claros de tendencia. Este método toma como pronóstico el pronóstico del periodo anterior más/menos una corrección, para esto se vale de un parámetro $\alpha$ que determina el grado hasta el cual las observaciones más recientes pueden o no influir en el valor del pronóstico. El coeficiente $\alpha$ puede tomar valores entre cero y uno, normalmente se aconseja utilizar un valor alto para series suaves y un valor bajo para series muy aleatorias. Sin embargo la forma más confiable de seleccionar un buen parámetro es estimándolo de las observaciones pasadas optimizando la suma de los cuadrados de los errores (SSE: Sum of Squared Errors) dado por la siguiente fórmula:
+
+$$SSE = \sum_{t=1}^{N} (Real_{t} - Pronóstico_{t})^2$$
+
+Las funciones que aplicaremos nos darán automáticamente los parámetros y valores iniciales que minimizan el SSE y que se ajustan a las restricciones de los coeficientes, para este modelo se restringe $0\leq\alpha\leq1$.
+
+### Ajuste del Modelo
+
+
+```{r}
+# Ajuste del modelo SES
+ses_fc <- ses(ts_train, h = 6, lambda = 0)
+ses_fc[["model"]]
+```
+
+```{r}
+# Gráfico del modelo SES ajustado
+autoplot(ts_train, series = 'Train') +
+  autolayer(fitted(ses_fc), series = 'Ajuste') +
+  guides(color = guide_legend('Serie')) +
+  labs(title = 'Suavización Exponencial Simple',
+       subtitle = 'Ajuste del Modelo (Train)',
+       x = 'Meses', 
+       y = 'Unidades') +
+  scale_color_manual(values = c('red',
+                                'steelblue'))
+```
+
+
+### Evaluación del Error
+
+```{r}
+# # Gráfico de errores de pronostico SES
+autoplot(ts_train, series = 'Train') +
+  autolayer(ses_fc$mean, series = 'Pronóstico') +
+  autolayer(fitted(ses_fc), series = 'Ajuste') +
+  autolayer(ts_test, series = 'Test') +
+  guides(color = guide_legend('Serie')) +
+  labs(title = 'Suavización Exponencial Simple',
+       subtitle = 'Pronóstico sobre el set de prueba (Test)',
+       x = 'Meses', 
+       y = 'Unidades') +
+  scale_color_manual(values = c('red',
+                                'orange',
+                                'grey', 
+                                'steelblue'))
+```
+
+Un $\alpha$ de 0.68 permite una reacción rápida a los cambios pero no suaviza demasiado la aleatoriedad. De todas maneras vemos buenos resultados sobre los datos de prueba.
+
+```{r, echo = FALSE, results = 'hide'}
+accuracy(ses_fc , ts_test)
+```
+
+```{r, echo=FALSE}
+metodos <- data.frame('Periodo' = format(as.Date(as.yearmon(time(ts_test))),
+                          "%Y-%m"),
+           'Ventas' = as.matrix(ts_test),
+           'Pronóstico' = round(as.matrix(ses_fc$mean[1:6])),
+           'Error' = round((as.matrix(ts_test)) - as.matrix(ses_fc$mean[1:6]))
+          )
+
+metodos %>% kbl(align = 'c') %>% 
+  kable_styling(bootstrap_options = "striped",
+                full_width        = F,
+                position          = "center") %>% 
+  add_header_above(c("SES" = 4)) 
+```
+
+```{r, echo=FALSE}
+resumen_ses <- data.frame('MÉTODO' = 'SES',
+                     'MAE'    = round(accuracy(ses_fc,
+                                         ts_test)[2,3]),
+                     'MAPE'   = round(accuracy(ses_fc,
+                                         ts_test)[2,5],1)
+                     )
+# resumen <- rbind(resumen, metodo)
+resumen_ses %>% kbl(align = 'c') %>% 
+  kable_styling(bootstrap_options = 'striped',
+                full_width        = FALSE,
+                position          = 'center') %>% 
+  add_header_above(c("Error de pronósticos sobre el grupo test" = 3)) %>% 
+  column_spec(1:3, width = "3cm")
+```
+
+Con un 20.7% de error porcentual promedio, el modelo SES es el que mejor resultado nos ofrece hasta el momento. 
+
+&nbsp;
+
+## Suavización Exponencial de Holt
+
+Para los casos en donde si existe tendencia es posible utilizar el método de Holt o Suavización Exponencial de dos Parámetros. Este modelo es similar al SES pero utiliza dos factores, uno para suavizar la aleatoriedad y otro para corregir la tendencia, una buena combinación de estos es la clave de un buen modelo.
+
+El modelo de Holt genera un pronóstico de tendencia constante creciente o decreciente en forma indefinida en el tiempo produciendo grandes errores para pronósticos a mediano y largo plazo. Si bien no es nuestro caso, vamos a utilizar un tercer parámetro que permite aplanar la pendiente a medida que transcurren los periodos. En resumen, tenemos los siguientes coeficientes de ajuste:
+
+- $\alpha$: coeficiente de atenuación de los datos. Valores cercanos a 1 indican que reacciona rápido a los cambios.
+
+- $\beta$: coeficiente de atenuación de la tendencia, valores cercanos a 0 replicará completamente la tendencia a los nuevos datos.
+
+- $\phi$: coeficiente que aplana la tendencia en pronósticos a largo plazo. Valores cercanos a 0 la atenuará en forma más repentina.
+
+La función **holt()** del paquete *forecast* encuentra la mejor combinación de los coeficientes minimizando el SSE.
+
+### Ajuste del Modelo
+
+```{r}
+# Ajuste del modelo Holt
+holt_fc <- holt(ts_train,
+                damped = TRUE,
+                h = 6,
+                lambda = 0)
+holt_fc[["model"]]
+```
+
+```{r}
+# Gráfico del modelo Holt ajustado
+autoplot(ts_train, series = 'Train') +
+  autolayer(fitted(holt_fc), series = 'Ajuste') +
+  labs(title = 'Método de Holt',
+       subtitle = 'Ajuste del Modelo (Train)',
+       x = 'Meses', 
+       y = 'Unidades') +
+  guides(color = guide_legend('Serie')) +
+  scale_color_manual(values = c('red',
+                                'steelblue'))
+```
+
+### Evaluación del Error
+
+```{r}
+# Gráfico de errores de pronostico Holt 
+autoplot(ts_train, series = 'Train') +
+  autolayer(holt_fc$mean, series = 'Pronóstico') +
+  autolayer(ts_test, series = "Real") +
+  labs(title = 'Método de Holt',
+       subtitle = 'Pronóstico sobre el set de prueba (Test)',
+       x = 'Meses', 
+       y = 'Unidades') +
+  guides(color = guide_legend('Serie')) +
+  scale_color_manual(values = c(
+                                'orange',
+                                'grey',
+                                'steelblue'))
+```
+
+Los resultados observados se asemejan al modelo SES, con la diferencia que el Holt le incorpora cierta tendencia al pronosticos.
+
+```{r, echo = FALSE, results = 'hide'}
+accuracy(holt_fc , ts_test)
+```
+
+
+```{r, echo=FALSE}
+metodos <- data.frame('Periodo' = format(as.Date(as.yearmon(time(ts_test))),
+                          "%Y-%m"),
+           'Ventas' = as.matrix(ts_test),
+           'Pronóstico' = round(as.matrix(holt_fc$mean[1:6])),
+           'Error' = round((as.matrix(ts_test)) - as.matrix(holt_fc$mean[1:6]))
+          )
+
+resumen_holt <- data.frame('MÉTODO' = 'Holt',
+                     'MAE' = round(accuracy(holt_fc,
+                                            ts_test)[2,3]),
+                     'MAPE' = round(accuracy(holt_fc,
+                                            ts_test)[2,5],1)
+                     )
+
+
+metodos %>% kbl(align = 'c') %>% 
+  kable_styling(bootstrap_options = "striped",
+                full_width        = F,
+                position          = "center") %>% 
+  add_header_above(c("Holt" = 4)) 
+
+  
+```
+```{r}
+resumen_holt %>% kbl(align = 'c') %>% 
+  kable_styling(bootstrap_options = 'striped',
+                full_width        = F,
+                position          = 'center') %>% 
+  add_header_above(c("Error de Pronósticos" = 3)) %>% 
+  column_spec(1:3, width = "3cm")
+```
+
+
+Con un error porcentual de 22% es apenas un par de puntos mejor que el modelo Naïve.
+
+&nbsp;
+
+## Suavización Exponencial de 3 parámetros (Holt-Winters)
+
+El modelo de Holt-Winters extiende el modelo de dos parámetros de Holt para incorporar un tercer parámetro que modela la estacionalidad de la serie. Hay dos variaciones de este método y su aplicación depende de como cambie la estacionalidad en el tiempo, se prefiere un modelo aditivo si es constante y un multiplicativo si cambia proporcionalmente con el nivel de la serie. Vamos a aplicar ambas variantes a nuestros datos y a comparar los resultados.
+
+### Ajuste de los Modelos
+
+```{r}
+# Ajuste del modelo Holt-Winters Aditivo
+winA_fc <- hw(ts_train,
+              seasonal = 'additive',
+              h = 6)
+winA_fc[['model']]
+```
+
+
+```{r}
+# Ajuste del modelo Holt-Winters Multiplicativo
+winM_fc <- hw(ts_train,
+              seasonal = 'multiplicative',
+              h = 6)
+winM_fc[['model']]
+```
+
+
+
+```{r}
+# Gráficos de ajuste de los modelos Holt-Winters
+autoplot(ts_train, series = 'Train') +
+  autolayer(fitted(winA_fc), series = 'Ajuste HWA') +
+  autolayer(fitted(winM_fc), series = 'Ajuste HWM') +
+  labs(title = 'Métodos de Holt-Winters',
+       subtitle = 'Ajuste del Modelo (Train)',
+       x = 'Meses', 
+       y = 'Unidades') +
+  guides(color = guide_legend('Serie')) +
+  scale_color_manual(values = c('red',
+                                'orange',
+                                'steelblue'))
+```
+
+### Evaluación del Error
+
+```{r}
+# Gráfico de errores de pronosticos Holt-Winters
+autoplot(ts_train, series = 'Train') +
+  autolayer(winA_fc$mean, series = 'Pronóstico HWA') +
+  autolayer(winM_fc$mean, series = 'Pronóstico HWM') +
+  autolayer(ts_test, series = 'Test') +
+  labs(title = 'Métodos de Holt-Winters',
+       subtitle = 'Pronóstico sobre el set de prueba (Test)',
+       x = 'Meses', 
+       y = 'Unidades') +
+  guides(color = guide_legend('Serie')) +
+  scale_color_manual(values = c('red',
+                                'orange',
+                                'grey',
+                                'steelblue'))
+```
+
+```{r, echo = FALSE, results = 'hide'}
+accuracy(winA_fc , ts_test)
+accuracy(winM_fc , ts_test)
+```
+
+
+```{r, echo=FALSE}
+# Holt-Winters Aditivo/multiplicativo
+metodos <- data.frame('Periodo' = format(as.Date(as.yearmon(time(ts_test))),
+                          "%Y-%m"),
+           'Ventas' = as.matrix(ts_test),
+           'Pronóstico(A)' = round(as.matrix(winA_fc$mean[1:6])),
+           'Error(A)' = round((as.matrix(ts_test)) - as.matrix(winA_fc$mean[1:6])),
+           'Pronóstico(M)' = round(as.matrix(winM_fc$mean[1:6])),
+           'Error(M)' = round((as.matrix(ts_test)) - as.matrix(winM_fc$mean[1:6]))
+          )
+
+metodos %>% kbl(align = 'c') %>% 
+  kable_styling(bootstrap_options = "striped",
+                full_width        = F,
+                position          = "center") %>% 
+  add_header_above(c('', '', "HW Aditivo" = 2,
+                     'HW Multiplicativo' = 2 )) 
+
+```
+
+
+
+```{r, echo=FALSE}
+resumen_holtw <- data.frame('MÉTODO' = c('HWA', 'HWM'),
+                     'MAE' = c(round(accuracy(winA_fc,
+                                            ts_test)[2,3]),
+                             round(accuracy(winM_fc,
+                                            ts_test)[2,3])),
+                     'MAPE' = c(round(accuracy(winA_fc,
+                                            ts_test)[2,5],1),
+                                round(accuracy(winM_fc,
+                                            ts_test)[2,5],1))
+                     )
+#resumen <- rbind(resumen, metodo)
+
+resumen_holtw %>% kbl(align = 'c') %>% 
+  kable_styling(bootstrap_options = 'striped',
+                full_width        = F,
+                position          = 'center') %>% 
+  add_header_above(c('Error de pronósticos sobre el grupo test' = 3)) %>% 
+  column_spec(1:3, width = "3cm")
+  
+```
+
+El método del Holt-Winters Multiplicativo arrojó un 16% de promedio de error por período, por el momento es el mejor modelo obtenido.
+
+&nbsp;
+
+## Modelos ARIMA
+
+Arima es otro modelo ampliamente utilizado para el pronóstico de series temporales. Es un método que combina modelos de diferenciación, autorregresión y medias móviles y que, a diferencia de los modelos de suavización, se basa en el análisis de la autocorrelación de los datos de la serie pero requiere como condición que esta sea estacionaria, si esto no se cumple no se puede aplicar el modelo.
+
+Una serie estacionaria es aquella cuyas propiedades no dependen del tiempo en que observada. Es decir, series con tendencia o estacionalidad son series no estacionarias ya que estas afectan al valor de la observación en periodos diferentes. Algunos casos pueden ser confusos, pero en general una serie estacionaria es aquella que no tiene patrones que se puedan predecir en el tiempo.
+
+Transformaciones logarítmicas, diferencias de primer y segundo orden y diferencias de orden estacional son herramientas que nos permitirán llevar una serie con patrones de tendencia y estacionalidad a una serie estacionaria.
+
+Para una serie sin estacionalidad (como la vamos a considerar en este modelo) es necesario encontrar solo 3 parámetros para ajustar el modelo ARIMA:
+
+- p: orden del modelo autorregresivo
+- d: número de diferencias no estacionales
+- q: orden del modelo de media móvil
+
+Para poder encontrar estos parámetros nos debemos ayudar del análisis de los gráficos de autocorrelación y de autocorrelaciones parcial de la serie.
+
+La serie que estamos analizando presenta tendencias positivas y negativas lo que indicaría que no es estacionaria. Formalmente podemos utilizar el test de Dickey-Fuller para corroborar si una serie es o no estacionaria. Las hipótesis de este test son las siguientes:
+
+ - $H_{0}$ : La serie no es estacionaria.
+ 
+ - $H_{1}$ : La serie es estacionaria.
+  
+Rechazamos $H_{0}$ si el p-value < 0.05 con un 95% de confianza.
+
+Apliquemos el test a nuestra serie:
+
+```{r}
+adf.test(ts_train, alternative = 'stationary')
+```
+
+El test de Dickey-Fuller indica que no podemos rechazar la hipótesis nula (p-value > 0.05) lo que indica que la serie es no estacionaria.
+
+Una artilugio para eliminar la tendencia es realizar la diferencia de primer orden, veamos si esto funciona.
+
+
+```{r}
+cbind("Serie original" = ts_train,
+      '1er diferencia' = diff(ts_train)) %>%
+  autoplot(facets = TRUE,
+           color  = 'steelblue') +
+  labs(title = 'Ventas',
+       x     = 'Meses')
+```
+
+La serie de primeras diferencias ya parece estacionaria, se ha perdido la tendencia y además vemos como las observaciones se ubican alrededor de una media de cero con una varianza que no cambia en el tiempo. Confirmemos con un nuevo test de Dickey-Fuller.
+
+```{r}
+ts_train %>% 
+  diff() %>% 
+  adf.test(alternative = 'stationary')
+```
+
+Con un p-value de 0.33 aún no podemos rechazar la hipótesis nula por lo que la serie no es estacionaria.
+
+Vamos a intentar aplicando diferencias de orden 2. Es decir, la diferencia de la serie de 1eras diferencias.
+
+```{r}
+cbind("Original"   = ts_train,
+      "1er. dif."  = diff(ts_train),
+      '2da. dif.'  = diff(diff(ts_train))) %>%
+  autoplot(facets = TRUE,
+           color  = 'steelblue') +
+  labs(title = 'Ventas',
+       x     = 'Meses')
+```
+
+
+```{r}
+ts_train %>%
+  diff(difference = 2) %>% 
+  adf.test(alternative = 'stationary')
+```
+
+Con un p-value de 0.022 (< 0.05), el test determina que se rechaza la hipótesis nula a favor de la alternativa: la serie ya es estacionaria.
+
+Al haber realizado dos diferencias el parámetro $d$ del modelo ARIMA toma el valor 2.
+
+### Autocorrelación y Autocorrelación Parcial
+
+El próximo paso es realizar los gráficos de autocorrelación (ACF) y autocorrelación parcial (PACF) de la serie estacionaria para poder determinar los coeficientes $p$ y $q$ del modelo.
+
+Hemos dicho anteriormente que el gráfico ACF mide la relación lineal entre una valor $y_{t}$ e $y_{t-k}$ para diferentes valores de $k$. Así, si $y_{t}$ e $y_{t-1}$ están correlacionados entonces $y_{t-1}$ e $y_{t-2}$ también deben estarlo, y como consecuencia hay correlación entre $y_{t}$ e $y_{t-2}$ porque ambos están conectados con $y_{t-1}$. Al usar el PACF se salta este problema ya que este mide la relación entre $y_{t}$ e $y_{t-k}$ después de remover los efectos de los retardos $1, 2, 3, ..., k-1$.
+
+
+
+```{r}
+ts_train %>% 
+  diff(differences = 2) %>%
+  ggtsdisplay(lag = 30)
+```
+
+Como regla general si los coeficientes de ACF tienden exponencialmente a cero el modelo adecuado será un ARIMA(p,d,0). Luego, el número $p$ del modelo son los coeficientes significativamente distintos de cero del gráfico PACF. Como tenemos un solo pico significativo en PACF tenemos $p = 1$, resultando un modelo ARIMA(1,2,0).
+
+### Ajuste de Modelos
+
+```{r}
+# Modelo ARIMA(1,2,0)
+arima120.train <- Arima(ts_train,
+                     order  = c(1,2,0),
+                     lambda = 0)
+```
+
+
+La función *auto.arima()* del paquete forecast nos permite encontrar la mejor combinación de parámetros para un modelo ARIMA, incluso podemos verificar si nuestros modelos propuestos son correctos o si deberíamos considerar otros.
+
+```{r}
+auto.arima(ts_train,
+           seasonal      = FALSE,
+           stepwise      = TRUE,
+           approximation = FALSE)
+
+```
+
+La función nos sugiere que el mejor modelo será un ARIMA(1,1,0), es decir con $d=1$ lo que significa que solo necesita una diferencia de primer orden para que la serie sea estacionaria, esto es contradictorio para nosotros ya que hemos necesitado dos diferencias utilizando el test de Dickey-Fuller. De todas maneras vamos a incorporarlo como modelo de análisis.
+
+```{r}
+# Modelo ARIMA(1,1,0)
+arima110.train <- Arima(ts_train,
+                     order  = c(1,1,0),
+                     lambda = 0)
+arima110.train
+```
+
+```{r}
+autoplot(ts_train, series = 'Train') +
+  autolayer(fitted(arima120.train), series = 'Ajuste ARIMA(1,2,0)') +
+  autolayer(fitted(arima110.train), series = 'Ajuste ARIMA(1,1,0)') +
+  labs(title = 'Métodos ARIMA',
+       subtitle = 'Ajuste de Modelos (Train)',
+       x = 'Meses', 
+       y = 'Unidades') +
+  guides(color = guide_legend('Serie')) +
+  scale_color_manual(values = c('red',
+                                'orange',
+                                'steelblue'))
+            
+```
+
+
+### Análisis de los Residuos
+
+Para la mayoría de los modelos de pronósticos, el residuo es la diferencia entre las observaciones $y_{t}$ y sus correspondientes pronósticos ajustados $\hat{y}_{t}$ resultando:
+
+$$e_{t} = y_{t} - \hat{y}_{t}$$
+
+Analizar los residuos nos permite conocer si el modelo de pronóstico ha capturado correctamente la información subyacente en los datos. Los residuos deben responder a un ruido blanco, es decir deben tener una media en cero y no estar correlacionados. Idealmente también deberían tener varianza constante y estar normalmente distribuidos aunque estos dos últimos requisitos no son estrictamente necesarios.
+
+Este análisis lo vamos a hacer gráficamente y nos apoyaremos en el test de Ljung-Box el cual nos servirá para confirmar si nuestro modelo está bien ajustado y si los errores se corresponden a un ruido blanco. Las hipótesis nula y alternativa en este test son las siguientes:
+
+ - $H_{0}$ : Los errores se distribuyen en forma independiente (hay ruido blanco).
+ 
+ - $H_{1}$ : Los errores no se distribuyen en forma independiente (No hay ruido blanco).
+  
+Rechazamos $H_{0}$ si el p-value < 0.05 con un 95% de confianza.
+
+La función **checkresiduals()** del paquete *forecast* nos permite verificar si los residuos cumplen o no las condiciones que describimos.
+
+```{r}
+checkresiduals(arima120.train)
+```
+
+
+El análisis de la serie de residuos nos dice que no existe un patrón de tendencia que sugiere autocorrelación de los errores, esto también es visible en el gráfico ACF donde no vemos coeficientes significativamente distintos de cero. También vemos que los errores están centrados en cero y que se distribuyen relativamente normal. Confirmamos estos supuestos con el test de Ljung-Box que arroja un p-value > 0.05 lo que significa que no se rechaza la hipótesis nula de que los errores se distribuyen de forma independiente.
+
+
+```{r}
+checkresiduals(arima110.train)
+```
+
+Con un p-value > 0.05 no podemos rechazar la hipótesis nula, por lo tanto los errores para este modelo también se distribuyen de manera independiente.
+
+
+### Evaluación del Error
+
+```{r}
+arima120.train_fc <- forecast(arima120.train, h = 6)
+arima110.train_fc <- forecast(arima110.train, h = 6)
+```
+
+
+```{r}
+# Gráfico de errores de pronosticos ARIMA
+autoplot(ts_train, series = 'Train') +
+  autolayer(arima120.train_fc$mean, series = 'ARIMA(1,2,0)') +
+  autolayer(arima110.train_fc$mean, series = 'ARIMA(1,1,0)') +
+  autolayer(ts_test, series = 'Test') +
+  labs(title = 'Métodos ARIMA',
+       subtitle = 'Pronóstico sobre el set de prueba (Test)',
+       x = 'Meses', 
+       y = 'Unidades') +
+  guides(color = guide_legend('Serie')) +
+  scale_color_manual(values = c('red',
+                                'orange',
+                                'grey',
+                                'steelblue'))
+            
+```
+
+
+```{r, echo = FALSE, results = 'hide'}
+accuracy(arima110.train_fc , ts_test)
+accuracy(arima120.train_fc , ts_test)
+```
+
+
+```{r, echo=FALSE}
+# Arima (1,2,0)
+metodos <- data.frame('Periodo' = format(as.Date(as.yearmon(time(ts_test))),
+                          "%Y-%m"),
+           'Ventas' = as.matrix(ts_test),
+           'Pronóstico' = round(as.matrix(arima120.train_fc$mean[1:6])),
+           'Error' = round((as.matrix(ts_test)) - as.matrix(arima120.train_fc$mean[1:6]))
+          )
+
+metodos %>% kbl(align = 'c') %>% 
+  kable_styling(bootstrap_options = "striped",
+                full_width        = F,
+                position          = "center") %>% 
+  add_header_above(c("Modelo ARIMA(1,2,0)" = 4)) 
+
+```
+
+```{r, echo=FALSE}
+# Arima (1,1,0)
+metodos <- data.frame('Periodo' = format(as.Date(as.yearmon(time(ts_test))),
+                          "%Y-%m"),
+           'Ventas' = as.matrix(ts_test),
+           'Pronóstico' = round(as.matrix(arima110.train_fc$mean[1:6])),
+           'Error' = round((as.matrix(ts_test)) - as.matrix(arima110.train_fc$mean[1:6]))
+          )
+
+metodos %>% kbl(align = 'c') %>% 
+  kable_styling(bootstrap_options = 'striped',
+                full_width        = F,
+                position          = 'center') %>% 
+  add_header_above(c("Modelo ARIMA(1,1,0)" = 4)) 
+
+```
+
+
+```{r, echo=FALSE}
+resumen_arima <- data.frame('MÉTODO' = c('ARIMA(1,2,0)',
+                                  'ARIMA(1,1,0)'),
+                     'MAE' = c(round(accuracy(arima120.train_fc,
+                                            ts_test)[2,3]),
+                             round(accuracy(arima110.train_fc,
+                                            ts_test)[2,3])),
+                     'MAPE' = c(round(accuracy(arima120.train_fc,
+                                            ts_test)[2,5],1),
+                                round(accuracy(arima110.train_fc,
+                                            ts_test)[2,5],1))
+                     )
+#resumen <- rbind(resumen, metodo)
+
+resumen_arima %>% kbl(align = 'c') %>% 
+  kable_styling(bootstrap_options = 'striped',
+                full_width        = F,
+                position          = 'center') %>% 
+  add_header_above(c('Error de pronósticos sobre el grupo test' = 3)) %>% 
+  column_spec(1:3, width = '3cm')
+  
+```
+
+&nbsp;
+
+## Pronósticos de Periodos Futuros
+
+Según la metodología de *Simulación de Modelos*, luego de ajustar diferentes métodos sobre nuestro grupo *Train* y evaluar pronósticos sobre el grupo *Test* debemos considerar como mejor modelo aquél que obtenga el menor error según la métrica adoptada y utilizarlo para el pronóstico de periodos futuros.
+
+El resumen de los errores MAE y MAPE que arrojó cada modelo es el siguiente:
+
+```{r, echo = FALSE}
+rm(resumen_f)
+resumen_f <- rbind(resumen_simples,
+                       resumen_ses,
+                       resumen_holt,
+                       resumen_holtw,
+                       resumen_arima)
+
+resumen_f<- resumen_f %>% 
+  arrange(MAPE, desc = FALSE)
+
+resumen_f$MAPE <-color_bar('#ff8978')(resumen_f$MAPE)
+resumen_f$MAE <- color_bar('#ff8978')(resumen_f$MAE)
+
+
+resumen_f %>% 
+  kbl(escape = F) %>% 
+  kable_paper('hover',
+              full_width = F,
+              position   = 'center') %>% 
+  add_header_above(c("Error de Pronósticos" = 3)) %>% 
+  column_spec(1:3, width = "5cm") %>% 
+  column_spec(2:3,
+              bold = T,
+              color = 'black')
+  #row_spec(1, background = '#6cd65c') %>% 
+  #row_spec(2, background = '#87d65c') %>% 
+  #row_spec(3, background = '#87d65c') %>% 
+  #row_spec(4, background = '#91d65c') %>% 
+  #row_spec(5, background = '#a1d65c') %>% 
+  #row_spec(6, background = '#b3d65c') %>% 
+  #row_spec(7, background = '#c2d65c') %>% 
+  #row_spec(8, background = '#d2d65c') %>% 
+  #row_spec(9, background = '#d6c65c') %>% 
+  #row_spec(10, background = '#d6ba5c') 
+  
+  
+```
+
+Siendo el modelo de Holt-Winters Multiplicativo el que obtuvo los mejores resultados, vamos a realizar el pronóstico de periodos futuros pero utilizando ambos grupos como datos de entradas (*Train* y *Test*).
+
+El número obtenido para cada periodo consistirá en una estimación probabilística de un valor futuro, que será una media y dos intervalos de confianza, uno al 80% y otro al 95%.
+
+
+```{r}
+# Ajuste y Pronóstico HW - Multiplicativo
+winM_pred <- hw(ts_ventas,
+                seasonal = 'multiplicative',
+                h = 6)
+
+winM_pred[['model']]  
+autoplot(ts_ventas, series = 'Real') +
+  autolayer(winM_pred, series = 'Pronóstico') +
+  labs(title = 'Método de Holt-Winters Multiplicativo',
+       subtitle = 'Pronóstico a 6 meses',
+       x = 'Meses', 
+       y = 'Unidades') +
+  guides(color = guide_legend('Serie')) +
+  scale_color_manual(values = c('orange',
+                                'steelblue'))
+```
+
+El modelo utiliza un $beta = 0,0001$ lo que significa que no suaviza la pendiente sino que la replica a los pronósticos de los periodos futuros.
+
+```{r, echo=FALSE}
+winM_pred %>% 
+  data.frame() %>%
+  rownames_to_column('Periodo') %>%
+  mutate_at(vars(-Periodo), funs(round(.))) %>% 
+  kbl(align = 'c') %>% 
+  kable_styling(bootstrap_options = 'striped',
+                full_width        = F,
+                position          = 'center') %>% 
+  column_spec(3:4,
+              bold = T,
+              color = 'white', 
+              background = '#e68402') %>% 
+  column_spec(5:6,
+              bold = T,
+              color = 'white', 
+              background = '#edaf5c') %>% 
+  column_spec(2,
+              bold = T,
+              color = 'white', 
+              background = '#c47104') %>% 
+  column_spec(1,
+              bold = T,
+              color = 'white', 
+              background = '#bab8b5') %>% 
+  add_header_above(c('Pronóstico 2do. Semestre 2008' = 6))
+  
+```
+&nbsp;
+
+
+Una técnica interesante dentro de la simulación de modelos es la de utilizar multimodelos de pronósticos, es decir, se eligen los dos o tres mejores y se toma como pronóstico final el promedio de los pronósticos de cada uno de ellos. Siguiendo esta línea, vamos a realizar pronósticos con nuestro segundo mejor modelo (SES) y luego promediarlos con el obtenido por el Holt-Winters Multiplicativo.
+
+&nbsp;
+
+```{r}
+# Ajuste y Pronóstico SES
+ses_pred <- ses(ts_ventas, h = 6, lambda = 0)
+
+ses_pred[['model']]  
+autoplot(ts_ventas, series = 'Real') +
+  autolayer(ses_pred, series = 'Pronóstico') +
+  labs(title = 'Método de Holt-Winters Multiplicativo',
+       subtitle = 'Pronóstico a 6 meses',
+       x = 'Meses', 
+       y = 'Unidades') +
+  guides(color = guide_legend('Serie')) +
+  scale_color_manual(values = c('orange',
+                                'steelblue'))
+```
+
+&nbsp;
+
+
+```{r, echo=FALSE}
+ses_pred %>%
+  data.frame() %>%
+  rownames_to_column('Periodo') %>%
+  mutate_at(vars(-Periodo), funs(round(.))) %>% 
+  kbl(align = 'c') %>% 
+  kable_styling(bootstrap_options = 'striped',
+                full_width        = F,
+                position          = 'center') %>% 
+  column_spec(3:4,
+              bold = T,
+              color = 'white', 
+              background = '#e68402') %>% 
+  column_spec(5:6,
+              bold = T,
+              color = 'white', 
+              background = '#edaf5c') %>% 
+  column_spec(2,
+              bold = T,
+              color = 'white', 
+              background = '#c47104') %>% 
+  column_spec(1,
+              bold = T,
+              color = 'white', 
+              background = '#bab8b5') %>% 
+  add_header_above(c('Pronóstico 2do. Semestre 2008' = 6))
+  
+```
+&nbsp;
+
+La tabla de pronósticos finales para el segundo semestre del año 2008 es la siguiente:
+
+&nbsp;
+```{r, echo = FALSE}
+data.frame(winM_pred, ses_pred) %>% 
+  rownames_to_column('Periodo') %>% 
+  mutate(Point.Forecast = round(Point.Forecast),
+         Point.Forecast.1 = round(Point.Forecast.1)) %>% 
+  select(Periodo,
+         'Pronóstico HWM' = Point.Forecast,
+         'Pronóstico SES' = Point.Forecast.1) %>% 
+  mutate('Pronóstico Promedio' = round((`Pronóstico HWM` + `Pronóstico SES`)/2)) %>% 
+  kbl(align = 'c') %>% 
+  kable_paper('hover',
+              full_width = F,
+              position   = 'center') %>% 
+  add_header_above(c('Pronóstico Multimodelo 2do. Semestre 2008' = 4)) %>%   column_spec(4,
+              bold = T,
+              color = 'black') %>% 
+  column_spec(1,
+              bold = T,
+              color = 'black')
+```
+
+&nbsp;
+
+# Conclusiones
+
+Uno de mis profesores durante mis años de universidad decía que los pronósticos siempre van a estar equivocados, que quizás había algunos modelos que podían resultar útiles pero que al final por más ajuste que se haga no van a predecir el futuro es forma correcta. Decía que la clave para tener un buen método de pronóstico se basa principalmente en la comparación entre ellos y quedarse con el que nos de un menor error. A esto es lo que apuntaba este proyecto, a tratar de entender que la importancia de realizar pronósticos, más allá de los los errores que puedan tener y de que no salgan como lo planeamos, es que nos ayudan a conocer mejor tanto el contexto como a nuestro propio negocio, a ver nuestras limitaciones y a hacernos preguntas para tratar de estar preparados a diferentes escenarios.
+
+Pudimos ver con este ejercicio como un modelo, que tiene un error de 16% (probablemente inaceptable en muchos contextos) puede superar ampliamente los métodos simples como el de promedios o el naïve y que son preferibles a no realizar  pronóstico alguno porque nos pueden ser de gran utilidad a la hora de reducir los riesgos en la toma de decisiones para el planeamiento de producción, de despachos, de requerimiento de materiales, personal y capacidad solo por nombrar algunas áreas que se ven beneficiadas por información de este tipo.
+
+
+
+
+
+
+
+
+&nbsp;
+
+# Bibliografía
+
+ - Hyndman, R.J., & Athanasopoulos, G. (2018) Forecasting: principles and practice, 2nd edition, OTexts: Melbourne, Australia. OTexts.com/fpp2.
+  </div>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>PowerBI on Proyectos de Ciencias</title>
+    <link>https://jonatanpace.github.io/tags/powerbi/</link>
+    <description>Recent content in PowerBI on Proyectos de Ciencias</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <managingEditor>jonatanpace@gmail.com</managingEditor>
+    <webMaster>jonatanpace@gmail.com</webMaster>
+    <lastBuildDate>Thu, 21 Jan 2021 00:00:00 +0000</lastBuildDate><atom:link href="https://jonatanpace.github.io/tags/powerbi/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Prever es Prevalecer (2NDTIME)</title>
+      <link>https://jonatanpace.github.io/post/prever-es-pravelecer-2ndtime/</link>
+      <pubDate>Thu, 21 Jan 2021 00:00:00 +0000</pubDate>
+      <author>jonatanpace@gmail.com</author>
+      <guid>https://jonatanpace.github.io/post/prever-es-pravelecer-2ndtime/</guid>
+      <description>1 Introducción 2 Modelos de Pronósticos disponibles 3 Serie Temporal 4 ETS(AAN) - Suavización Exponencial de Holt 5 ETS(AAA) - Suavización Exponencial de Holt-Winters 6 Conclusiones 7 Referencias    1 Introducción Antes de comenzar, es importante destacar que tanto la serie de datos, como los modelos de pronósticos y métricas de performance que utilizaremos a continuación fueron desarrollados en un post anterior, por lo que no entraremos nuevamente en detalle.</description>
+    </item>
+    
+  </channel>
+</rss>

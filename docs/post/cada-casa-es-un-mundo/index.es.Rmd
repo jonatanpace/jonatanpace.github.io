@@ -1,0 +1,1347 @@
+---
+title: Cada Casa es un Mundo
+subtitle: 'Modelos de regresión lineal para predecir el precio de propiedades.'
+author: ~
+date: '2020-11-14'
+slug: Cada-Casa-es-un-Mundo
+categories: []
+tags: ['Python', 'Machine Learning', 'Regresión Lineal']
+type: ''
+image: 'img/portada_bsas.jpg'
+Description: 'Sin las calles y atardeceres de Buenos Aires no puede escribirse un tango decía Jorge Luis Borges y es que la arquitectura porteña nació de una mezcla única de obras de diseñadores y paisajistas europeos que terminaron conformando una ciudad tan mutante como fascinante, como si las construcciones góticas, las casas de chapas y los modernos rascacielos que la decoran hubiesen llegado a un acuerdo para convivir en armonía. A pesar de que sobren los motivos para vivir en Buenos Aires resulta ser una de las ciudades con m2 más caro de latinoamérica, entremos en detalles para ver que esconde esta maravillosa ciudad.'
+codefolding_nobutton: false
+codefolding_show: 'show'
+disable_codefolding: false
+output: 
+  blogdown::html_page:
+    toc: true
+    number_sections: true
+    highlight: 'pygments'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, collapse = TRUE)
+```
+
+  <div style="text-align: justify"> 
+# Presentación del Problema
+
+Según los datos del Relevamiento Inmobiliario de América Latina (RIAL), elaborado por el Centro de Investigación en Finanzas de la Universidad Torcuato Di Tella y Navent, Buenos Aires se ubica como la segunda ciudad con m2 más caro de la región cotizando a U$D 3000. El estudio se actualiza anualmente y este último corresponde a Marzo del 2020. Pueden consultarse los detalles [aquí](https://www.utdt.edu/ver_contenido.php?id_contenido=17165&id_item_menu=24981).
+
+![](/img/properati_files/precios_paises.png)
+
+El objetivo de nuestro estudio es analizar datos que provienen de una fuente diferente a la utilizada en el RIAL pero que tienen un orígen similar: anuncios en páginas web de propietarios que venden sus viviendas. Vamos a desarrollar un modelo de regresión lineal el cual nos permitirá realizar predicciones de los precios de las viviendas a partir de diferentes atributos de las mismas como así también obtener el precio del m2 a partir de los coeficientes del modelo.
+
+Algunos de los interrogantes que nos proponemos responder son:
+
+- ¿Cuál es el precio de una propiedad dada una superficie?
+- ¿Cuál es el error incurrido en este proceso?
+- ¿Cuál es la variación de precios de las propiedades?
+- ¿Cuáles son las barrios más caros y cuáles los más accesibles?
+- ¿Cómo varía el precio respecto al tipo de propiedad?
+
+Comenzaremos realizando un análisis gráfico de los datos y luego entrenaremos varios modelos de regresión lineal, observaremos el error obtenido e iremos mejorando el modelo a fin de obtener mejores resultados.
+
+&nbsp;
+
+# Carga de Librerías
+
+
+```python
+# Manipulación de Datos
+# =====================
+import numpy  as np
+import pandas as pd
+
+# Gráficos
+# ========
+import seaborn           as sns
+import matplotlib.pyplot as plt
+plt.style.use('ggplot')
+plt.style.context('dark_background')
+sns.set_context('notebook')
+
+# Preprocesado y modelado
+# =======================
+from scipy.stats             import pearsonr
+import statsmodels.api       as sm
+from sklearn.model_selection import train_test_split 
+from sklearn.metrics         import mean_squared_error 
+from sklearn.metrics         import r2_score
+
+# Configuración de warnings
+# =========================
+import warnings
+warnings.filterwarnings('ignore')
+```
+&nbsp;
+
+# Descripción del Dataset
+
+El dataset que utilizaremos puede descargarse de la página web en properati.com.ar/data. Aquí se puede encontrar el dataset completo, el cual contiene más registros y más atributos que el que utilizaremos en este análisis. Incluso hay información para otros países y regiones.
+
+Cada fila del dataset corresponde al anuncio de venta de una propiedad y a partir de lo que decía este anuncio se pudieron obtener los siguientes atributos:
+
+- `tipo`: corresponde al tipo de vivienda. En nuestro caso hemos descargado los datos para los tipos *Departamento*, *Casa* y *PH*.
+- `barrio`: nombre del barrio en el cual se encuentra la vivienda. En este caso tenemos barrios de la ciudad de Buenos Aires.
+- `cant_hab`: número de habitaciones de la propiedad.
+- `cant_bath`: cantidad de baños de la propiedad.
+- `superficie`: superficie en metros cuadrados de la vivienda.
+- `precio`: precio de la propiedad en USD.
+
+&nbsp;
+
+##  Carga del Dataset
+
+
+```python
+prop = pd.read_csv('propiedades.csv')
+prop.head()
+```
+<div>
+</style>
+<div style="overflow-x:auto;">
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: left;">
+      <th></th>
+      <th>tipo</th>
+      <th>Barrio</th>
+      <th>cant_hab</th>
+      <th>cant_bath</th>
+      <th>superficie</th>
+      <th>precio</th>
+    </tr>
+  </thead>
+  <tbody>
+      <th>0</th>
+      <td>Casa</td>
+      <td>Velez Sarsfield</td>
+      <td>3</td>
+      <td>2</td>
+      <td>95</td>
+      <td>199900</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Departamento</td>
+      <td>Nuñez</td>
+      <td>1</td>
+      <td>1</td>
+      <td>44</td>
+      <td>147000</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Departamento</td>
+      <td>Almagro</td>
+      <td>1</td>
+      <td>1</td>
+      <td>40</td>
+      <td>92294</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Departamento</td>
+      <td>Almagro</td>
+      <td>1</td>
+      <td>1</td>
+      <td>49</td>
+      <td>115000</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Departamento</td>
+      <td>Almagro</td>
+      <td>1</td>
+      <td>1</td>
+      <td>40</td>
+      <td>77000</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+Vamos a renombrar el atributo `Barrio` para que tenga el mismo formato que los demás.
+
+
+```python
+# Renombramos la columna barrio
+prop.rename(columns = {'Barrio':'barrio'},
+            inplace = True)
+```
+
+Veamos las diferentes categorías que existen dentro de la variable `tipo`y `barrio`.
+
+
+```python
+print('Los tipos de propiedades son : {}'.format(prop['tipo'].unique()))
+```
+
+    Los tipos de propiedades son : ['Casa' 'Departamento' 'PH']
+    
+
+
+```python
+print('Nuestro dataset tiene {} barrios distintos, los cuales son los siguientes:'.format(prop['barrio'].nunique()))
+print()
+print((prop['barrio'].unique()))
+```
+
+    Nuestro dataset tiene 57 barrios distintos, los cuales son los siguientes:
+    
+    ['Velez Sarsfield' 'Nuñez' 'Almagro' 'Palermo' 'Caballito' 'Villa Crespo'
+     'Villa Urquiza' 'Parque Chacabuco' 'Barracas' 'Retiro' 'Belgrano'
+     'Floresta' 'Recoleta' 'Saavedra' 'Balvanera' 'Colegiales' 'Parque Chas'
+     'Barrio Norte' 'Villa Devoto' 'Puerto Madero' 'Villa Ortuzar'
+     'Villa Pueyrredón' 'Villa Real' 'Once' 'Flores' 'San Telmo' 'Las Cañitas'
+     'Villa Santa Rita' 'Centro / Microcentro' 'Villa del Parque'
+     'Parque Centenario' 'Chacarita' 'Boedo' 'Abasto' 'San Cristobal'
+     'Liniers' 'Villa General Mitre' 'Agronomía' 'Parque Patricios' 'Boca'
+     'Coghlan' 'Paternal' 'Monserrat' 'San Nicolás' 'Villa Lugano'
+     'Parque Avellaneda' 'Congreso' 'Mataderos' 'Monte Castro' 'Constitución'
+     'Catalinas' 'Versalles' 'Villa Luro' 'Pompeya' 'Tribunales'
+     'Villa Soldati' 'Villa Riachuelo']
+    
+
+
+```python
+prop.info()
+
+    <class 'pandas.core.frame.DataFrame'>
+    RangeIndex: 45904 entries, 0 to 45903
+    Data columns (total 6 columns):
+     #   Column      Non-Null Count  Dtype 
+    ---  ------      --------------  ----- 
+     0   tipo        45904 non-null  object
+     1   barrio      45904 non-null  object
+     2   cant_hab    45904 non-null  int64 
+     3   cant_bath   45904 non-null  int64 
+     4   superficie  45904 non-null  int64 
+     5   precio      45904 non-null  int64 
+    dtypes: int64(4), object(2)
+    memory usage: 2.1+ MB
+```  
+
+Vemos que no hay valores nulos en el dataset pero que el tipo de dato de las variables `tipo`, `barrio`, `cant_hab` y  `cant_bath` no es el adecuado. Vamos a transformarlo al tipo *category*. Es decir queremos que sean variables categóricas.
+
+
+```python
+prop['tipo'] = prop['tipo'].astype('category')
+prop['barrio'] = prop['barrio'].astype('category')
+prop['cant_hab'] = prop['cant_hab'].astype('category')
+prop['cant_bath'] = prop['cant_bath'].astype('category')
+```
+&nbsp;
+
+## Resumen Estadístico
+
+
+```python
+prop.describe(include = 'all')
+```
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: center;
+    }
+</style>
+<div style="overflow-x:auto;">
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>tipo</th>
+      <th>barrio</th>
+      <th>cant_hab</th>
+      <th>cant_bath</th>
+      <th>superficie</th>
+      <th>precio</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>count</th>
+      <td>45904</td>
+      <td>45904</td>
+      <td>45904</td>
+      <td>45904</td>
+      <td>45904</td>
+      <td>45904</td>
+    </tr>
+    <tr>
+      <th>unique</th>
+      <td>3</td>
+      <td>57</td>
+      <td>8.0</td>
+      <td>5.0</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>top</th>
+      <td>Departamento</td>
+      <td>Palermo</td>
+      <td>3.0</td>
+      <td>1.0</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>freq</th>
+      <td>40355</td>
+      <td>7104</td>
+      <td>13941.0</td>
+      <td>30856.0</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>mean</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>79.78</td>
+      <td>214393.81</td>
+    </tr>
+    <tr>
+      <th>std</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>46.65</td>
+      <td>140713.24</td>
+    </tr>
+    <tr>
+      <th>min</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>28.00</td>
+      <td>69500.00</td>
+    </tr>
+    <tr>
+      <th>25%</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>46.00</td>
+      <td>120000.00</td>
+    </tr>
+    <tr>
+      <th>50%</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>65.00</td>
+      <td>169000.00</td>
+    </tr>
+    <tr>
+      <th>75%</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>99.00</td>
+      <td>259000.00</td>
+    </tr>
+    <tr>
+      <th>max</th>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>320.00</td>
+      <td>950000.00</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+Nuestro dataset contiene 45904 registros. Las propiedades relevadas tienen entre 1 y 8 habitaciones, un máximo de 5 baños y una superficie que varía entre los 28 y 320 m2. Por otro lado, el precio de las mismas se encuentra entre 69500 y 950000 dolares.
+
+&nbsp;
+
+## Análisis Gráfico
+
+Vamos a comenzar a realizar diferentes tipos de gráficos de las variables que tenemos para entender mejor nuestro datos y generar ideas.
+
+### Variable Objetivo
+
+Nuestra variable objetivo es aquella que queremos predecir a través del modelo que desarrollemos. En este caso será el `precio` de las propiedades. Veamos como se distribuye esta variable.
+
+
+```python
+# Distribución del precio
+plt.figure(figsize = (10, 5))
+sns.histplot(prop["precio"], bins = 20 )
+plt.title('Histograma de precios')
+```
+
+![](/img/properati_files/output_25_1.png)
+
+
+### Variables Explicativas
+
+Veamos también como se distribuyen las demás variables. Con estas intentaremos observar si existen relaciones con nuestra variable objetivo. 
+
+
+```python
+# Distribución del tipo de propiedad
+sns.countplot("tipo", data = prop)
+plt.title('Número de propiedades por tipo')
+prop['tipo'].value_counts(normalize = True).round(3)*100
+
+    Departamento    87.9
+    PH               9.5
+    Casa             2.6
+    Name: tipo, dtype: float64
+```
+
+![](/img/properati_files/output_28_1.png)
+
+El 88% de los registros de nuestro dataset corresponden a propiedades del tipo *Departamento*. Veamos si presentan diferentes distribuciones en cuanto a cantidad de habitaciones, baños y metros cuadrados y como se relacionan respecto al precio.
+
+
+```python
+# Gráficos de densidad para precio y superficie
+# ============================================
+def kdeplot(feature): 
+    plt.figure(figsize=(12, 5))
+    plt.title("Gráfico de densidad para {}".format(feature))
+    ax0 = sns.kdeplot(prop[prop['tipo'] == 'Casa'][feature],
+                      label= 'Casa',
+                      shade = True)
+    ax1 = sns.kdeplot(prop[prop['tipo'] == 'Departamento'][feature],
+                      label = 'Departamento',
+                      shade = True)
+    ax2 = sns.kdeplot(prop[prop['tipo'] == 'PH'][feature],
+                      label = 'PH',
+                      shade = True)
+    plt.xlabel(feature)
+    plt.legend()
+kdeplot('superficie')
+kdeplot('precio')
+```
+
+
+![](/img/properati_files/output_30_0.png)
+
+
+
+![](/img/properati_files/output_30_1.png)
+
+
+Podemos ver a partir de los gráficos que la variable `superficie` se distribuye de diferentes maneras según el tipo de propiedad. Era de esperar algo así ya que en general las casas son más grandes que la mayoría de los departamentos. Pero si bien la superficie media de las casas es mayor, la distribución de los precios busca pegarse una con otras. Es decir, a la hora de hablar de precios se manejan valores similares independientemente del tipo de propiedad.
+
+Podemos comenzar a ver como la superficie resulta ser buena variable predictora para el caso de departamentos pero no así para los otros dos tipos. Esto nos lleva a pensar que lo mejor será hacer un modelo para cada tipo de propiedad o al menos dos modelos, ya que las distribuciones de precios de departamentos y Phs tienen un comportamiento similar. 
+
+
+```python
+# Boxplot para precio y superficie
+# ================================
+fig, ax = plt.subplots(1,2,figsize = (12,5))
+
+sns.boxplot(y    = 'precio',
+            x    = 'tipo',
+            data = prop,
+            ax   = ax[0]).set_title("Distribución del precio por tipo de vivienda")
+
+sns.boxplot(y    = 'superficie',
+            x    = 'tipo',
+            data = prop,
+            ax   = ax[1]).set_title("Distribución de la superficie por tipo de vivienda")
+```
+
+![](/img/properati_files/output_32_1.png)
+
+
+Efectivamente, la medianas de los precios para departamentos y Phs son prácticamente iguales no así las medianas de las superficies. Esto se podría comprobar realizando un test de hipótesis que para el objetivo de este estudio no es necesario.
+
+Otro aspecto importante es la presencia de valores atípicos. Tengamos en cuenta que hay más variables que condicionan el precio de una vivienda y que no las consideramos porque las desconocemos. El estado de la propiedad, la cercanía a diferentes servicios, la zona en particular en la que se encuentra, si la vivienda está o no amueblada, el año de la construcción o la locura del dueño entre otras variables afectan directamente al precio. Esto hace que sea difícil poder detectar verdaderos outliers por lo que vamos a proceder con nuestro análisis asumiendo que el precio que tienen es correcto.
+
+Algo que sí podemos observar es como varía el precio según el barrio. Hay presupuestos para todos los bolsillos.
+
+
+```python
+fig, ax = plt.subplots(figsize = (10,25))
+order_barrio = prop.groupby(by = ['barrio'])['precio'].median().sort_values(ascending = False).index
+sns.boxplot(y     = 'barrio',
+            x     = 'precio',
+            data  = prop,
+            ax    = ax,
+            order = order_barrio)
+plt.title("Distribución del precio por barrio")
+```
+
+![](/img/properati_files/output_35_1.png)
+
+
+Otro aspecto que determina el precio de las propiedades son la cantidad de baños y la de habitaciones.
+
+
+```python
+# Boxplot para habitaciones y baños
+# =================================
+fig, ax = plt.subplots(2,
+                       1,
+                       figsize = (15,15))
+fig.tight_layout(pad = 4)
+
+sns.boxplot(y    = 'precio',
+            x    = 'cant_hab',
+            data = prop,
+            ax   = ax[0]).set_title("Distribución del precio por cantidad de habitaciones")
+
+sns.boxplot(y    = 'precio',
+            x    = 'cant_bath',
+            data = prop,
+            ax   = ax[1]).set_title("Distribución del precio por cantidad de baños")
+```
+
+![](/img/properati_files/output_37_1.png)
+
+
+En cuanto al número de habitaciones, hay un aumento del precio cuando pasamos de 1 a 4, esto era lógico de esperar. Lo que si es interesante observar es que este aumento progresivo no se observa en viviendas que tienen entre 5 y 8 habitaciones, es decir tienen precios similares.
+La tendencia en el aumento de la mediana del precio es creciente para el número de baños, no sucede lo que observamos en el gráfico anterior.
+Algo no menor es que tenemos departamentos de 1 y 2 habitaciones a precios desorbitados, no me imagino un departamento de una habitación de U$D 800000. Cruzar la superficie de las viviendas con el precio de las mismas nos ayudará a observar inconsistencia en nuestros datos.
+
+&nbsp;
+
+## Análisis de Correlación
+
+Vamos a medir la correlación de Pearson entre las variables `precio` y `superficie` para ver si tiene sentido armar un modelo de regresión lineal entre estas variables. 
+
+
+```python
+# Correlación lineal entre el precio y la superficie
+# ==================================================
+corr_test = pearsonr(x = prop['superficie'],
+                     y =  prop['precio'])
+
+print("Coeficiente de correlación de Pearson: ",
+      corr_test[0])
+
+print("P-value: ", corr_test[1])
+```
+
+    Coeficiente de correlación de Pearson:  0.758.
+    P-value:  0.0
+    
+
+La correlación existente es considerable y a la vez significativa. Tiene sentido modelar el precio a través de un modelo de regresión lineal. Esta relación puede observarse gráficamente con un scatterplot.
+
+
+```python
+fig, ax = plt.subplots(figsize = (20,10))
+
+sns.scatterplot(x       = 'superficie',
+                y       = 'precio',
+                data    = prop,
+                hue     = 'tipo',
+                ax      = ax,
+                palette = "muted",
+                alpha   = 0.7
+                )
+plt.title("Correlación entre precio y superficie")
+```
+
+![](/img/properati_files/output_43_1.png)
+
+&nbsp;
+
+# Modelo de Regresión Lineal Simple
+
+Comenzaremos proponiendo un modelo de regresión lineal simple. Un mismo modelo para todas las viviendas independientemente de la ubicación. Luego intentaremos mejorarlo teniendo en cuenta estas otras variables. Buscaremos predecir la variable `precio` utilizando el atributo `superficie`. La fórmula resultante será la siguiente:
+
+ $$precio = \beta_{superficie} * m2 + \beta_{0}$$
+El Error Cuadrático Medio (MSE) es el criterio de evaluación más usado para problemas de regresión pero para este problema no resulta intuitivo por lo que vamos a usar el RMSE que es la Raíz Cuadrada del Error Cuadrático Medio. Así que si nuestro RMSE resulta ser 20000 para un modelo, esto indica que en promedio los valores tienen una desviación de más/menos 20000 unidades monetarias respecto al valor real. 
+
+&nbsp;
+
+## División Train y Test
+
+Como en todo estudio predictivo, no solo es importante ajustar el modelo, sino también cuantificar su capacidad para predecir nuevas observaciones. Para poder hacer esta evaluación, se dividen los datos en dos grupos, uno de entrenamiento y otro de test.
+
+
+```python
+# División de los datos en train y test
+# ======================================
+X = prop['superficie']
+y = prop['precio']
+
+X_train, X_test, y_train, y_test = train_test_split(
+                                        X.values.reshape(-1,1),
+                                        y.values.reshape(-1,1),
+                                        train_size   = 0.8,
+                                        random_state = 1234,
+                                        shuffle      = True
+                                    )
+```
+&nbsp;
+
+## Modelo de Referencia
+
+Antes de construir el modelo predictivo vamos a definir un modelo de referencia, es decir, el modelo más simple que podamos utilizar para predecir y que más simple que usar el mismísimo promedio de los precios. Claro que tendrá un gran sesgo, pero servirá de referencia y será nuestro piso a mejorar.
+
+```python
+precio_prom = np.full(y_test.shape,
+                      np.mean(y_train),
+                      dtype = float)
+
+print("El RMSE del test: {:.0f}".format(np.sqrt(mean_squared_error(y_test,
+                                                             precio_prom))))
+```
+
+    El RMSE del test: 140055
+    
+
+El error (RMSE) de test es de 140055 USD. Es decir, las predicciones del modelo final se alejan en promedio 140055 USD del valor real. Claramente este modelo no sirve para predecir nada, pero será útil para conocer cuál es nuestra bara. Comencemos a evaluar mejores alternativas.
+&nbsp;
+
+## Mejoras de Modelo
+
+### Modelo solo para Departamentos
+
+
+```python
+# Filtramos los datos
+# ===================
+deptos = prop[prop['tipo'] == 'Departamento']
+
+# Dividimos en train y test
+# =========================
+X = deptos['superficie']
+y = deptos['precio']
+
+X_train, X_test, y_train, y_test = train_test_split(
+                                        X.values.reshape(-1,1),
+                                        y.values.reshape(-1,1),
+                                        train_size   = 0.8,
+                                        random_state = 1234,
+                                        shuffle      = True
+                                                    )
+
+# Entrenamos el modelo
+# ====================
+X_train = sm.add_constant(X_train, prepend = True)
+modelo = sm.OLS(endog = y_train,
+                exog  = X_train,)
+modelo = modelo.fit()
+print(modelo.summary())
+```
+
+                                OLS Regression Results                            
+    ==============================================================================
+    Dep. Variable:                      y   R-squared:                       0.678
+    Model:                            OLS   Adj. R-squared:                  0.678
+    Method:                 Least Squares   F-statistic:                 6.789e+04
+    Date:                Sat, 14 Nov 2020   Prob (F-statistic):               0.00
+    Time:                        10:29:11   Log-Likelihood:            -4.1103e+05
+    No. Observations:               32284   AIC:                         8.221e+05
+    Df Residuals:                   32282   BIC:                         8.221e+05
+    Df Model:                           1                                         
+    Covariance Type:            nonrobust                                         
+    ==============================================================================
+                     coef    std err          t      P>|t|      [0.025      0.975]
+    ------------------------------------------------------------------------------
+    const       1559.1579    930.702      1.675      0.094    -265.052    3383.368
+    x1          2850.5323     10.940    260.564      0.000    2829.090    2871.975
+    ==============================================================================
+    Omnibus:                    11422.563   Durbin-Watson:                   1.989
+    Prob(Omnibus):                  0.000   Jarque-Bera (JB):           107373.685
+    Skew:                           1.433   Prob(JB):                         0.00
+    Kurtosis:                      11.462   Cond. No.                         174.
+    ==============================================================================
+    
+    Warnings:
+    [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+    
+
+
+```python
+# Error de test del modelo 
+# =========================
+X_test = sm.add_constant(X_test, prepend=True)
+y_pred = modelo.predict(exog = X_test)
+rmse = mean_squared_error(
+        y_true  = y_test,
+        y_pred  = y_pred,
+        squared = False
+       )
+
+residuos = y_pred - y_test.flatten()
+print("")
+print("El error RMSE de test es: {:.0f}".format(rmse))
+```
+
+    
+    El error RMSE de test es: 80607
+    
+
+### Resultados Gráficos
+
+
+```python
+# Armamos un dataframe para ver los resultados
+# ============================================
+rdos = np.column_stack((X_test[:,1], y_test, y_pred, residuos))
+rdos = pd.DataFrame(rdos,
+                    columns = ['superficie',
+                               'precio',
+                               'predic',
+                               'error'],
+                   dtype = 'int')
+
+# Gráficos
+# ========
+
+fig, ax = plt.subplots(1, 2, figsize = (15,5))
+fig.tight_layout(pad = 4)
+
+# Regresión
+ax[0].plot(X_test[:,1], y_pred, c = 'r')
+sns.scatterplot(x = 'superficie',
+                y = 'precio',
+                data = rdos,
+                color = 'forestgreen',
+                ax = ax[0])
+ax[0].set_title('Regresión lineal')
+
+# Residuos
+sns.scatterplot(x = 'superficie',
+                y = 'error',
+                data = rdos,
+                color = 'forestgreen',
+                ax = ax[1])
+ax[1].axhline(y = 0,
+              linestyle = '--',
+              color = 'black',
+              lw = 2)
+ax[1].set_title('Residuos')
+```
+
+
+![](/img/properati_files/output_58_1.png)
+
+
+
+### Interpretación
+
+El modelo lineal generado sigue la ecuación:
+
+$$precio = 2850\:USD * m2 + 1559\:USD$$
+ 
+Por cada metro cuadrado de incremento en la superficie de la propiedad, el precio aumenta en promedio unos 2850 USD.
+
+El error de test del modelo es de 80607 USD. Es decir que las predicciones del modelo final se alejan en promedio 80607 USD del valor real. El cual sigue siendo muy importante pero mucho menor que nuestro RMSE base de 140055 USD.
+
+Gráficamente observamos que nuestro modelo proporciona un buen ajuste para departamentos menores de 80m2, es a partir de aquí donde el error se empieza a descontrolar aumentando su varianza. Un buen modelo debería mantener la variabilidad del error constante alrededor de una media igual a cero. Sin dudas tenemos que seguir mejorándolo.
+
+### Modelo para Departamentos de un Barrio Específico
+
+Vamos a seleccionar un barrio y a realizar un modelo solo para los departamentos de ese barrio. Lo que esperamos con esto es observar un menor error de predicción ya que los precios difieren entre barrios como ya hemos visto gráficamente.
+
+
+```python
+# Filtramos los datos
+# ===================
+caballito = prop[(prop['tipo'] == 'Departamento') 
+                 & (prop['barrio'] == 'Caballito')]
+
+# Dividimos en train y test
+# =========================
+X = caballito['superficie']
+y = caballito['precio']
+
+X_train, X_test, y_train, y_test = train_test_split(
+                                        X.values.reshape(-1,1),
+                                        y.values.reshape(-1,1),
+                                        train_size   = 0.8,
+                                        random_state = 1234,
+                                        shuffle      = True
+                                    )
+# Entrenamos el modelo
+# ====================
+X_train = sm.add_constant(X_train, prepend = True)
+modelo = sm.OLS(endog = y_train, exog = X_train,)
+modelo = modelo.fit()
+print(modelo.summary())
+```
+
+                                OLS Regression Results                            
+    ==============================================================================
+    Dep. Variable:                      y   R-squared:                       0.766
+    Model:                            OLS   Adj. R-squared:                  0.766
+    Method:                 Least Squares   F-statistic:                     7998.
+    Date:                Sat, 14 Nov 2020   Prob (F-statistic):               0.00
+    Time:                        10:29:15   Log-Likelihood:                -30280.
+    No. Observations:                2450   AIC:                         6.056e+04
+    Df Residuals:                    2448   BIC:                         6.058e+04
+    Df Model:                           1                                         
+    Covariance Type:            nonrobust                                         
+    ==============================================================================
+                     coef    std err          t      P>|t|      [0.025      0.975]
+    ------------------------------------------------------------------------------
+    const       2.669e+04   2280.513     11.701      0.000    2.22e+04    3.12e+04
+    x1          2255.5478     25.222     89.429      0.000    2206.090    2305.006
+    ==============================================================================
+    Omnibus:                      813.783   Durbin-Watson:                   1.945
+    Prob(Omnibus):                  0.000   Jarque-Bera (JB):             6222.150
+    Skew:                           1.358   Prob(JB):                         0.00
+    Kurtosis:                      10.319   Cond. No.                         181.
+    ==============================================================================
+    
+    Warnings:
+    [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+    
+
+
+```python
+# Error de test del modelo 
+# =========================
+X_test = sm.add_constant(X_test, prepend=True)
+y_pred = modelo.predict(exog = X_test)
+rmse = mean_squared_error(
+        y_true  = y_test,
+        y_pred  = y_pred,
+        squared = False
+       )
+residuos = y_pred - y_test.flatten()
+print("")
+print("El error RMSE de test es: {:.0f}".format(rmse))
+```
+
+    
+    El error RMSE de test es: 55468
+    
+
+
+```python
+# Armamos un dataframe para ver los resultados
+# ============================================
+rdos = np.column_stack((X_test[:,1], y_test, y_pred, residuos))
+rdos = pd.DataFrame(rdos,
+                    columns = ['superficie',
+                               'precio',
+                               'predic',
+                               'error'],
+                   dtype = 'int')
+
+# Gráficos
+# ========
+
+fig, ax = plt.subplots(1, 2, figsize = (15,5))
+fig.tight_layout(pad = 4)
+
+# Regresión
+ax[0].plot(X_test[:,1], y_pred, c = 'r')
+sns.scatterplot(x = 'superficie',
+                y = 'precio',
+                data = rdos,
+                color = 'forestgreen',
+                ax = ax[0])
+ax[0].set_title('Regresión lineal')
+
+# Residuos
+sns.scatterplot(x = 'superficie',
+                y = 'error',
+                data = rdos,
+                color = 'forestgreen',
+                ax = ax[1])
+ax[1].axhline(y = 0,
+              linestyle = '--',
+              color = 'black',
+              lw = 2)
+ax[1].set_title('Residuos')
+```
+
+![](/img/properati_files/output_66_1.png)
+
+
+
+
+El modelo lineal para este barrio en particular sigue la ecuación:
+
+$$precio = 2256 USD * m2 + 26685 USD$$
+ 
+Por cada metro cuadrado de incremento en la superficie de la propiedad, el precio aumenta en promedio unos 2256 USD.
+
+El error de test del modelo es de 55468 USD. Es decir que las predicciones del modelo final se alejan en promedio 56458 USD del valor real. Estamos afinando cada vez más el modelo para tener mejores resultados.
+
+Gráficamente observamos que nuestro modelo proporciona un buen ajuste para departamentos menores de 100 m2, nuevamente observamos como la varianza del error de predicción aumenta a medida que aumenta la superficie de la propiedad.
+
+### Modelo para Departamento menor a 100m2 de un Barrio Específico
+
+En el análisis gráfico habíamos observado que las propiedades de menor a 100 m2 tenían precios más estables. Vamos a ver si un modelo centrado en estas características nos da un buen resultado.
+
+
+```python
+# Filtramos los datos
+# ===================
+caballito = prop[(prop['tipo'] == 'Departamento') 
+                 & (prop['barrio'] == 'Caballito')
+                & (prop['superficie'] < 100)]
+
+# Dividimos en train y test
+# =====================
+X = caballito['superficie']
+y = caballito['precio']
+
+X_train, X_test, y_train, y_test = train_test_split(
+                                        X.values.reshape(-1,1),
+                                        y.values.reshape(-1,1),
+                                        train_size   = 0.8,
+                                        random_state = 1234,
+                                        shuffle      = True
+                                    )
+# Entrenamos el modelo
+# ====================
+X_train = sm.add_constant(X_train, prepend = True)
+modelo = sm.OLS(endog = y_train, exog = X_train,)
+modelo = modelo.fit()
+print(modelo.summary())
+```
+
+                                OLS Regression Results                            
+    ==============================================================================
+    Dep. Variable:                      y   R-squared:                       0.673
+    Model:                            OLS   Adj. R-squared:                  0.672
+    Method:                 Least Squares   F-statistic:                     3890.
+    Date:                Sat, 14 Nov 2020   Prob (F-statistic):               0.00
+    Time:                        10:29:16   Log-Likelihood:                -22436.
+    No. Observations:                1895   AIC:                         4.488e+04
+    Df Residuals:                    1893   BIC:                         4.489e+04
+    Df Model:                           1                                         
+    Covariance Type:            nonrobust                                         
+    ==============================================================================
+                     coef    std err          t      P>|t|      [0.025      0.975]
+    ------------------------------------------------------------------------------
+    const       7909.2811   2495.115      3.170      0.002    3015.816    1.28e+04
+    x1          2563.9672     41.112     62.366      0.000    2483.338    2644.596
+    ==============================================================================
+    Omnibus:                      376.587   Durbin-Watson:                   2.017
+    Prob(Omnibus):                  0.000   Jarque-Bera (JB):             1235.804
+    Skew:                           0.978   Prob(JB):                    4.45e-269
+    Kurtosis:                       6.438   Cond. No.                         196.
+    ==============================================================================
+    
+    Warnings:
+    [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+    
+
+
+```python
+# Error de test del modelo 
+# =========================
+X_test = sm.add_constant(X_test, prepend = True)
+y_pred = modelo.predict(exog = X_test)
+rmse = mean_squared_error(
+        y_true  = y_test,
+        y_pred  = y_pred,
+        squared = False
+       )
+residuos = y_pred - y_test.flatten()
+print("")
+print("El error RMSE de test es: {:.0f}".format(rmse))
+```
+
+    
+    El error RMSE de test es: 34505
+    
+
+
+```python
+# Armamos un dataframe para ver los resultados
+# ============================================
+rdos = np.column_stack((X_test[:,1], y_test, y_pred, residuos))
+rdos = pd.DataFrame(rdos,
+                    columns = ['superficie',
+                               'precio',
+                               'predic',
+                               'error'],
+                   dtype = 'int')
+
+# Gráficos
+# ========
+
+fig, ax = plt.subplots(1, 2, figsize = (15,5))
+fig.tight_layout(pad = 4)
+
+# Regresión
+ax[0].plot(X_test[:,1], y_pred, c = 'r')
+sns.scatterplot(x = 'superficie',
+                y = 'precio',
+                data = rdos,
+                color = 'forestgreen',
+                ax = ax[0])
+ax[0].set_title('Regresion lineal')
+
+# Residuos
+sns.scatterplot(x = 'superficie',
+                y = 'error',
+                data = rdos,
+                color = 'forestgreen',
+                ax = ax[1])
+ax[1].axhline(y = 0,
+              linestyle = '--',
+              color = 'black',
+              lw = 2)
+ax[1].set_title('Residuos')
+```
+
+
+![](/img/properati_files/output_73_1.png)
+
+
+
+
+El modelo lineal en este caso resulta:
+
+$$precio = 2564\:USD * m2 + 7909\:USD$$
+ 
+Por cada metro cuadrado de incremento en la superficie de la propiedad, el precio aumenta en promedio unos 2564 USD.
+
+El error de test del modelo es de 34505 USD. Lo hemos mejorado afinando nuestro modelo, haciéndolo más acorde de acuerdo a la ubicación del barrio y a la cantidad de metros cuadrados. Aquí tampoco tenemos errores con varianza constante.
+
+&nbsp;
+
+# Modelo de Regresión Lineal Múltiple
+
+Vamos a modelar nuestro problema con un modelo de regresión lineal múltiple incorporando todas las variables que tengamos. Pero como algunas de ellas son categóricas primero debemos transformarlas en variables dummies para que el modelo las puedan interpretar. Ahora nuestro modelo va a predecir el precio en función de múltiples variables predictoras el cual quedará de la siguiente manera:
+
+ $$precio = \beta_{superficie}*m2 + \beta_{tipo}\\+
+ \beta_{barrio} + \beta_{habitacion}\\+
+ \beta_{bath} + \beta_{0}$$
+&nbsp;
+
+## Preprocesado 
+
+Transformamos las variables categóricas en variables dummies.
+
+
+```python
+prop_dummies = pd.get_dummies(data = prop)
+prop_dummies.info()
+
+    <class 'pandas.core.frame.DataFrame'>
+    RangeIndex: 45904 entries, 0 to 45903
+    Data columns (total 75 columns):
+     #   Column                       Non-Null Count  Dtype
+    ---  ------                       --------------  -----
+     0   superficie                   45904 non-null  int64
+     1   precio                       45904 non-null  int64
+     2   tipo_Casa                    45904 non-null  uint8
+     3   tipo_Departamento            45904 non-null  uint8
+     4   tipo_PH                      45904 non-null  uint8
+     5   barrio_Abasto                45904 non-null  uint8
+     6   barrio_Agronomía             45904 non-null  uint8
+     7   barrio_Almagro               45904 non-null  uint8
+     8   barrio_Balvanera             45904 non-null  uint8
+     9   barrio_Barracas              45904 non-null  uint8
+     10  barrio_Barrio Norte          45904 non-null  uint8
+     11  barrio_Belgrano              45904 non-null  uint8
+     12  barrio_Boca                  45904 non-null  uint8
+     13  barrio_Boedo                 45904 non-null  uint8
+     14  barrio_Caballito             45904 non-null  uint8
+     15  barrio_Catalinas             45904 non-null  uint8
+     16  barrio_Centro / Microcentro  45904 non-null  uint8
+     17  barrio_Chacarita             45904 non-null  uint8
+     18  barrio_Coghlan               45904 non-null  uint8
+     19  barrio_Colegiales            45904 non-null  uint8
+     20  barrio_Congreso              45904 non-null  uint8
+     21  barrio_Constitución          45904 non-null  uint8
+     22  barrio_Flores                45904 non-null  uint8
+     23  barrio_Floresta              45904 non-null  uint8
+     24  barrio_Las Cañitas           45904 non-null  uint8
+     25  barrio_Liniers               45904 non-null  uint8
+     26  barrio_Mataderos             45904 non-null  uint8
+     27  barrio_Monserrat             45904 non-null  uint8
+     28  barrio_Monte Castro          45904 non-null  uint8
+     29  barrio_Nuñez                 45904 non-null  uint8
+     30  barrio_Once                  45904 non-null  uint8
+     31  barrio_Palermo               45904 non-null  uint8
+     32  barrio_Parque Avellaneda     45904 non-null  uint8
+     33  barrio_Parque Centenario     45904 non-null  uint8
+     34  barrio_Parque Chacabuco      45904 non-null  uint8
+     35  barrio_Parque Chas           45904 non-null  uint8
+     36  barrio_Parque Patricios      45904 non-null  uint8
+     37  barrio_Paternal              45904 non-null  uint8
+     38  barrio_Pompeya               45904 non-null  uint8
+     39  barrio_Puerto Madero         45904 non-null  uint8
+     40  barrio_Recoleta              45904 non-null  uint8
+     41  barrio_Retiro                45904 non-null  uint8
+     42  barrio_Saavedra              45904 non-null  uint8
+     43  barrio_San Cristobal         45904 non-null  uint8
+     44  barrio_San Nicolás           45904 non-null  uint8
+     45  barrio_San Telmo             45904 non-null  uint8
+     46  barrio_Tribunales            45904 non-null  uint8
+     47  barrio_Velez Sarsfield       45904 non-null  uint8
+     48  barrio_Versalles             45904 non-null  uint8
+     49  barrio_Villa Crespo          45904 non-null  uint8
+     50  barrio_Villa Devoto          45904 non-null  uint8
+     51  barrio_Villa General Mitre   45904 non-null  uint8
+     52  barrio_Villa Lugano          45904 non-null  uint8
+     53  barrio_Villa Luro            45904 non-null  uint8
+     54  barrio_Villa Ortuzar         45904 non-null  uint8
+     55  barrio_Villa Pueyrredón      45904 non-null  uint8
+     56  barrio_Villa Real            45904 non-null  uint8
+     57  barrio_Villa Riachuelo       45904 non-null  uint8
+     58  barrio_Villa Santa Rita      45904 non-null  uint8
+     59  barrio_Villa Soldati         45904 non-null  uint8
+     60  barrio_Villa Urquiza         45904 non-null  uint8
+     61  barrio_Villa del Parque      45904 non-null  uint8
+     62  cant_hab_1                   45904 non-null  uint8
+     63  cant_hab_2                   45904 non-null  uint8
+     64  cant_hab_3                   45904 non-null  uint8
+     65  cant_hab_4                   45904 non-null  uint8
+     66  cant_hab_5                   45904 non-null  uint8
+     67  cant_hab_6                   45904 non-null  uint8
+     68  cant_hab_7                   45904 non-null  uint8
+     69  cant_hab_8                   45904 non-null  uint8
+     70  cant_bath_1                  45904 non-null  uint8
+     71  cant_bath_2                  45904 non-null  uint8
+     72  cant_bath_3                  45904 non-null  uint8
+     73  cant_bath_4                  45904 non-null  uint8
+     74  cant_bath_5                  45904 non-null  uint8
+    dtypes: int64(2), uint8(73)
+    memory usage: 3.9 MB
+```  
+&nbsp;
+
+## Modelado
+
+
+```python
+# Dividimos en train y test
+# =========================
+X = prop_dummies.drop(['precio'], axis = 1)
+y = prop_dummies['precio']
+
+X_train, X_test, y_train, y_test = train_test_split(
+                                        X,
+                                        y.values.reshape(-1,1),
+                                        train_size   = 0.8,
+                                        random_state = 1234,
+                                        shuffle      = True
+                                    )
+# Entrenamos el modelo
+# ====================
+X_train = sm.add_constant(X_train, prepend = True)
+modelo = sm.OLS(endog = y_train, exog = X_train,)
+modelo = modelo.fit()
+print(modelo.summary())
+
+```
+
+                                OLS Regression Results                            
+    ==============================================================================
+    Dep. Variable:                      y   R-squared:                       0.769
+    Model:                            OLS   Adj. R-squared:                  0.768
+    Method:                 Least Squares   F-statistic:                     1742.
+    Date:                Sat, 14 Nov 2020   Prob (F-statistic):               0.00
+    Time:                        10:33:47   Log-Likelihood:            -4.6058e+05
+    No. Observations:               36723   AIC:                         9.213e+05
+    Df Residuals:                   36652   BIC:                         9.219e+05
+    Df Model:                          70                                         
+    Covariance Type:            nonrobust                                         
+    ===============================================================================================
+                                      coef    std err          t      P>|t|      [0.025      0.975]
+    -----------------------------------------------------------------------------------------------
+    const                        1.507e+04   2135.601      7.055      0.000    1.09e+04    1.93e+04
+    superficie                   1977.8928     14.446    136.912      0.000    1949.577    2006.208
+    tipo_Casa                   -3.678e+04   1973.795    -18.635      0.000   -4.07e+04   -3.29e+04
+    tipo_Departamento            5.147e+04   1007.058     51.109      0.000    4.95e+04    5.34e+04
+    tipo_PH                       379.5864   1224.558      0.310      0.757   -2020.583    2779.756
+    barrio_Abasto                6447.5755   4759.322      1.355      0.176   -2880.833    1.58e+04
+    barrio_Agronomía            -3702.5191   8672.409     -0.427      0.669   -2.07e+04    1.33e+04
+    barrio_Almagro                843.4828   1647.822      0.512      0.609   -2386.296    4073.261
+    barrio_Balvanera            -1.663e+04   2376.887     -6.998      0.000   -2.13e+04    -1.2e+04
+    barrio_Barracas             -3853.3032   3844.312     -1.002      0.316   -1.14e+04    3681.658
+    barrio_Barrio Norte          5.839e+04   2008.563     29.072      0.000    5.45e+04    6.23e+04
+    barrio_Belgrano              7.554e+04   1614.749     46.783      0.000    7.24e+04    7.87e+04
+    barrio_Boca                 -3.784e+04   6439.935     -5.875      0.000   -5.05e+04   -2.52e+04
+    barrio_Boedo                -1.346e+04   3640.937     -3.697      0.000   -2.06e+04   -6323.488
+    barrio_Caballito             1.118e+04   1670.548      6.691      0.000    7903.940    1.45e+04
+    barrio_Catalinas            -7.937e+04   3.85e+04     -2.063      0.039   -1.55e+05   -3949.173
+    barrio_Centro / Microcentro -1.545e+04   6254.956     -2.470      0.014   -2.77e+04   -3190.781
+    barrio_Chacarita             1.714e+04   3866.497      4.433      0.000    9561.562    2.47e+04
+    barrio_Coghlan               3.944e+04   4059.452      9.716      0.000    3.15e+04    4.74e+04
+    barrio_Colegiales            3.368e+04   2941.288     11.451      0.000    2.79e+04    3.94e+04
+    barrio_Congreso             -2.695e+04   4117.989     -6.544      0.000    -3.5e+04   -1.89e+04
+    barrio_Constitución         -3.784e+04   5633.225     -6.718      0.000   -4.89e+04   -2.68e+04
+    barrio_Flores                -1.82e+04   2318.364     -7.852      0.000   -2.27e+04   -1.37e+04
+    barrio_Floresta             -2.817e+04   3351.970     -8.404      0.000   -3.47e+04   -2.16e+04
+    barrio_Las Cañitas           9.732e+04   4643.630     20.959      0.000    8.82e+04    1.06e+05
+    barrio_Liniers              -1.953e+04   3925.824     -4.974      0.000   -2.72e+04   -1.18e+04
+    barrio_Mataderos            -3.403e+04   4039.361     -8.424      0.000   -4.19e+04   -2.61e+04
+    barrio_Monserrat            -1.971e+04   3761.769     -5.240      0.000   -2.71e+04   -1.23e+04
+    barrio_Monte Castro         -4843.5854   4890.460     -0.990      0.322   -1.44e+04    4741.857
+    barrio_Nuñez                 6.091e+04   2376.563     25.629      0.000    5.63e+04    6.56e+04
+    barrio_Once                 -1.708e+04   4036.114     -4.232      0.000    -2.5e+04   -9171.574
+    barrio_Palermo                7.37e+04   1393.488     52.892      0.000     7.1e+04    7.64e+04
+    barrio_Parque Avellaneda    -3.725e+04   7148.284     -5.211      0.000   -5.13e+04   -2.32e+04
+    barrio_Parque Centenario    -7509.0620   3336.257     -2.251      0.024    -1.4e+04    -969.902
+    barrio_Parque Chacabuco     -2.347e+04   3862.756     -6.077      0.000    -3.1e+04   -1.59e+04
+    barrio_Parque Chas           8674.4787   7102.949      1.221      0.222   -5247.506    2.26e+04
+    barrio_Parque Patricios     -3.261e+04   4986.294     -6.539      0.000   -4.24e+04   -2.28e+04
+    barrio_Paternal             -6176.7011   3647.729     -1.693      0.090   -1.33e+04     972.953
+    barrio_Pompeya              -7.864e+04   7655.240    -10.273      0.000   -9.36e+04   -6.36e+04
+    barrio_Puerto Madero         2.743e+05   3480.653     78.812      0.000    2.67e+05    2.81e+05
+    barrio_Recoleta              7.813e+04   1848.147     42.275      0.000    7.45e+04    8.18e+04
+    barrio_Retiro                4.491e+04   3816.150     11.769      0.000    3.74e+04    5.24e+04
+    barrio_Saavedra              2.286e+04   3139.851      7.279      0.000    1.67e+04     2.9e+04
+    barrio_San Cristobal        -1.464e+04   3218.206     -4.550      0.000    -2.1e+04   -8335.546
+    barrio_San Nicolás          -1.641e+04   3599.974     -4.560      0.000   -2.35e+04   -9358.767
+    barrio_San Telmo             3986.1712   3071.719      1.298      0.194   -2034.486       1e+04
+    barrio_Tribunales           -2.149e+04   8741.482     -2.458      0.014   -3.86e+04   -4351.845
+    barrio_Velez Sarsfield       -3.46e+04   8213.008     -4.212      0.000   -5.07e+04   -1.85e+04
+    barrio_Versalles            -2.023e+04   6037.490     -3.350      0.001   -3.21e+04   -8392.567
+    barrio_Villa Crespo          9526.6881   1723.868      5.526      0.000    6147.858    1.29e+04
+    barrio_Villa Devoto          1.362e+04   2888.819      4.713      0.000    7953.344    1.93e+04
+    barrio_Villa General Mitre  -2.118e+04   6098.924     -3.472      0.001   -3.31e+04   -9223.642
+    barrio_Villa Lugano         -8.401e+04   5785.471    -14.521      0.000   -9.53e+04   -7.27e+04
+    barrio_Villa Luro           -6447.7936   3982.574     -1.619      0.105   -1.43e+04    1358.166
+    barrio_Villa Ortuzar         2.126e+04   6201.217      3.429      0.001    9108.648    3.34e+04
+    barrio_Villa Pueyrredón       1.01e+04   3917.205      2.578      0.010    2421.536    1.78e+04
+    barrio_Villa Real           -1.481e+04   8461.309     -1.750      0.080   -3.14e+04    1774.731
+    barrio_Villa Riachuelo       -5.39e+04   2.01e+04     -2.679      0.007   -9.33e+04   -1.45e+04
+    barrio_Villa Santa Rita      -1.15e+04   5455.096     -2.108      0.035   -2.22e+04    -805.987
+    barrio_Villa Soldati        -1.196e+05   2.36e+04     -5.072      0.000   -1.66e+05   -7.34e+04
+    barrio_Villa Urquiza         3.389e+04   2015.732     16.813      0.000    2.99e+04    3.78e+04
+    barrio_Villa del Parque       345.4623   3056.371      0.113      0.910   -5645.113    6336.038
+    cant_hab_1                   1.073e+04   1873.287      5.728      0.000    7058.430    1.44e+04
+    cant_hab_2                   1.929e+04   1712.797     11.264      0.000    1.59e+04    2.27e+04
+    cant_hab_3                   2.967e+04   1544.668     19.206      0.000    2.66e+04    3.27e+04
+    cant_hab_4                    3.02e+04   1521.563     19.849      0.000    2.72e+04    3.32e+04
+    cant_hab_5                    1.03e+04   2045.711      5.036      0.000    6293.302    1.43e+04
+    cant_hab_6                   5180.3825   3329.419      1.556      0.120   -1345.374    1.17e+04
+    cant_hab_7                  -4.922e+04   5841.577     -8.426      0.000   -6.07e+04   -3.78e+04
+    cant_hab_8                  -4.109e+04   7314.376     -5.617      0.000   -5.54e+04   -2.67e+04
+    cant_bath_1                 -7.171e+04   2010.936    -35.658      0.000   -7.56e+04   -6.78e+04
+    cant_bath_2                 -3.532e+04   1941.934    -18.191      0.000   -3.91e+04   -3.15e+04
+    cant_bath_3                  1.409e+04   2192.903      6.427      0.000    9796.421    1.84e+04
+    cant_bath_4                  3.887e+04   3010.656     12.909      0.000     3.3e+04    4.48e+04
+    cant_bath_5                  6.914e+04   8062.875      8.575      0.000    5.33e+04    8.49e+04
+    ==============================================================================
+    Omnibus:                    13249.809   Durbin-Watson:                   1.987
+    Prob(Omnibus):                  0.000   Jarque-Bera (JB):           120972.735
+    Skew:                           1.477   Prob(JB):                         0.00
+    Kurtosis:                      11.386   Cond. No.                     7.13e+16
+    ==============================================================================
+    
+    Warnings:
+    [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+    [2] The smallest eigenvalue is 6.19e-26. This might indicate that there are
+    strong multicollinearity problems or that the design matrix is singular.
+    
+
+
+```python
+# Error de test del modelo 
+# =========================
+X_test = sm.add_constant(X_test, prepend = True)
+y_pred = modelo.predict(exog = X_test)
+rmse = mean_squared_error(
+        y_true  = y_test,
+        y_pred  = y_pred,
+        squared = False
+       )
+residuos = y_pred - y_test.flatten()
+print("")
+print("El error RMSE de test es: {:.0f}".format(rmse))
+```
+
+    
+    El error RMSE de test es: 68100
+    
+
+
+```python
+# Gráficos
+# ========
+fig, ax = plt.subplots(1, 2, figsize = (15,5))
+fig.tight_layout(pad = 4)
+
+ax[0].scatter(y_test, y_pred, edgecolors=(0, 0, 0), alpha = 0.4)
+ax[0].plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()],
+                 'k--', color = 'black', lw=2)
+ax[0].set_title('Valor predicho vs valor real', fontsize = 10, fontweight = "bold")
+ax[0].set_xlabel('Real')
+ax[0].set_ylabel('Predicción')
+ax[0].tick_params(labelsize = 7)
+
+# Residuos
+
+ax[1].scatter(list(range(len(y_test))), residuos,
+              edgecolors=(0, 0, 0), alpha = 0.4)
+ax[1].axhline(y = 0, linestyle = '--', color = 'black', lw=2)
+ax[1].set_title('Residuos del modelo', fontsize = 10, fontweight = "bold")
+ax[1].set_xlabel('id')
+ax[1].set_ylabel('Residuo')
+ax[1].tick_params(labelsize = 7)
+```
+
+
+![](/img/properati_files/output_85_0.png)
+
+&nbsp;
+
+## Interpretación
+
+Vamos a interpretar con un ejemplo como predice este modelo el cual tiene 75 coeficientes pero no todos se aplican al mismo tiempo.
+Supongamos que queremos predecir el precio de la siguiente propiedad:
+
+
+```python
+prop.iloc[44543]
+
+    tipo          Departamento
+    barrio           Caballito
+    cant_hab                 2
+    cant_bath                1
+    superficie              30
+    precio               80000
+    Name: 44543, dtype: object
+```
+
+$$precio=\beta_{superficie}*m2+\beta_{Departamento}\\+\beta_{Caballito}+\beta_{2 hab}\\+\beta_{1 bath}+\beta_{0}$$
+
+Extrayendo los coeficientes de los resultados del modelo, tenemos que:
+
+$$precio =  1977.89 * 30 + 51470\\+ 11180 + 19290\\+ (-71710) + 15070$$
+
+$$precio = 84636\:USD $$
+
+Para esta propiedad tenemos un error de 4636 USD sobre el precio real.
+
+El error RMSE del modelo fue de 68100 USD. Observando los gráficos podemos ver como a partir de propiedades con valores reales de 400000 USD el modelo empieza a aumentar el error subestimando los precios. En el gráfico de los residuos del modelo, los errores deberían distribuirse de igual manera en ambos lados del cero, en este caso vemos una importante cantidad de ellos por debajo.
+
+&nbsp;
+
+# Conclusiones
+
+Los mejores resultados los hemos obtenido cuando ajustamos nuestro modelo solo a departamentos de menos de 100 m2 de un barrio específico, esto era de esperar ya que al hacerlo estamos disminuyendo la variabilidad de precios en las observaciones. Pero todos los modelos que realizamos tienen algo en común, empiezan a tener grandes errores en propiedades grandes o de precios elevados, pierden poder de ajuste y esto es sin duda porque necesitamos relevar más información de las propiedades. 
+Si es imposible obtener información adicional podríamos intentar aplicar otros modelos más potentes como árboles de decisiones o bien utilizar estos modelos pero para propiedades pequeñas, yo propondría no mayor a 70 metros cuadrados.
+
+&nbsp;
+
+# Bibliografía
+
+- cienciadedatos.net
+- Machine Learning Mastery With Python, Jason Brownlee. 
+  </div>

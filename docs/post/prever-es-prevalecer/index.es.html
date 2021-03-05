@@ -1,0 +1,2605 @@
+<script src="index.es_files/header-attrs-2.6/header-attrs.js"></script>
+<script src="index.es_files/kePrint-0.0.1/kePrint.js"></script>
+<link href="index.es_files/lightable-0.0.1/lightable.css" rel="stylesheet" />
+<style type="text/css">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<div id="TOC">
+<ul>
+<li><a href="#presentación-del-problema"><span class="toc-section-number">1</span> Presentación del Problema</a></li>
+<li><a href="#métodos-de-pronósticos"><span class="toc-section-number">2</span> Métodos de Pronósticos</a>
+<ul>
+<li><a href="#métodos-simples"><span class="toc-section-number">2.1</span> Métodos Simples</a></li>
+<li><a href="#métodos-complejos"><span class="toc-section-number">2.2</span> Métodos Complejos</a></li>
+</ul></li>
+<li><a href="#error-de-pronósticos-métricas"><span class="toc-section-number">3</span> Error de Pronósticos (Métricas)</a></li>
+<li><a href="#carga-de-librerías-y-datos"><span class="toc-section-number">4</span> Carga de Librerías y Datos</a></li>
+<li><a href="#análisis-gráfico-y-exploración-de-patrones"><span class="toc-section-number">5</span> Análisis Gráfico y Exploración de Patrones</a>
+<ul>
+<li><a href="#valores-atípicos"><span class="toc-section-number">5.1</span> Valores Atípicos</a></li>
+<li><a href="#gráficos-estacional"><span class="toc-section-number">5.2</span> Gráficos Estacional</a></li>
+<li><a href="#función-de-autocorrelación"><span class="toc-section-number">5.3</span> Función de Autocorrelación</a></li>
+</ul></li>
+<li><a href="#grupo-train-y-grupo-test"><span class="toc-section-number">6</span> Grupo Train y Grupo Test</a></li>
+<li><a href="#modelado"><span class="toc-section-number">7</span> Modelado</a>
+<ul>
+<li><a href="#métodos-básicos"><span class="toc-section-number">7.1</span> Métodos Básicos</a>
+<ul>
+<li><a href="#ajuste-de-modelos"><span class="toc-section-number">7.1.1</span> Ajuste de Modelos</a></li>
+<li><a href="#evaluación-del-error"><span class="toc-section-number">7.1.2</span> Evaluación del error</a></li>
+</ul></li>
+<li><a href="#suavización-exponencial-simple"><span class="toc-section-number">7.2</span> Suavización Exponencial Simple</a>
+<ul>
+<li><a href="#ajuste-del-modelo"><span class="toc-section-number">7.2.1</span> Ajuste del Modelo</a></li>
+<li><a href="#evaluación-del-error-1"><span class="toc-section-number">7.2.2</span> Evaluación del Error</a></li>
+</ul></li>
+<li><a href="#suavización-exponencial-de-holt"><span class="toc-section-number">7.3</span> Suavización Exponencial de Holt</a>
+<ul>
+<li><a href="#ajuste-del-modelo-1"><span class="toc-section-number">7.3.1</span> Ajuste del Modelo</a></li>
+<li><a href="#evaluación-del-error-2"><span class="toc-section-number">7.3.2</span> Evaluación del Error</a></li>
+</ul></li>
+<li><a href="#suavización-exponencial-de-3-parámetros-holt-winters"><span class="toc-section-number">7.4</span> Suavización Exponencial de 3 parámetros (Holt-Winters)</a>
+<ul>
+<li><a href="#ajuste-de-los-modelos"><span class="toc-section-number">7.4.1</span> Ajuste de los Modelos</a></li>
+<li><a href="#evaluación-del-error-3"><span class="toc-section-number">7.4.2</span> Evaluación del Error</a></li>
+</ul></li>
+<li><a href="#modelos-arima"><span class="toc-section-number">7.5</span> Modelos ARIMA</a>
+<ul>
+<li><a href="#autocorrelación-y-autocorrelación-parcial"><span class="toc-section-number">7.5.1</span> Autocorrelación y Autocorrelación Parcial</a></li>
+<li><a href="#ajuste-de-modelos-1"><span class="toc-section-number">7.5.2</span> Ajuste de Modelos</a></li>
+<li><a href="#análisis-de-los-residuos"><span class="toc-section-number">7.5.3</span> Análisis de los Residuos</a></li>
+<li><a href="#evaluación-del-error-4"><span class="toc-section-number">7.5.4</span> Evaluación del Error</a></li>
+</ul></li>
+<li><a href="#pronósticos-de-periodos-futuros"><span class="toc-section-number">7.6</span> Pronósticos de Periodos Futuros</a></li>
+</ul></li>
+<li><a href="#conclusiones"><span class="toc-section-number">8</span> Conclusiones</a></li>
+<li><a href="#bibliografía"><span class="toc-section-number">9</span> Bibliografía</a></li>
+</ul>
+</div>
+
+<div style="text-align: justify">
+
+<p> </p>
+<div id="presentación-del-problema" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> Presentación del Problema</h1>
+<p>La idea de este proyecto es la de aplicar conceptos relacionados al análisis de series temporales y explorar algunos métodos de pronósticos.</p>
+<p>Los datos con los que trabajaremos corresponden a una serie temporal de ventas reales de distintos ítem para la construcción que pertenecen a una misma familia o grupo de productos. Estos datos fueron registrados entre enero del 2006 y junio del 2008 y están conformado por 3263 observaciones que representan ventas diarias.</p>
+<p>A fin de reducir la incertidumbre en los pronósticos vamos a trabajar con demandas acumuladas en el tiempo, es decir, vamos a utilizar ventas mensuales en vez de diarias. Además, como se trata de un grupo de productos y no de productos individuales serán pronósticos agregados. El efecto de la agregación en los pronósticos será la disminución del error ya que la serie resultante compensará las variabilidades.</p>
+<p>El enfoque que vamos a abordar será el de <em>Simulación de Modelos</em>, esta metodología nos permitirá elegir el modelo más apropiado al comparar el error que cada uno de ellos obtenga.</p>
+<p>Los pasos a seguir serán los siguientes:</p>
+<ol style="list-style-type: decimal">
+<li><p>Vamos a dividir la serie histórica (nuestros datos) en dos grupos: el grupo <em>Train</em> y el grupo <em>Test</em>.</p></li>
+<li><p>Ajustaremos los modelos sobre el grupo <em>Train</em>.</p></li>
+<li><p>“Pronosticaremos” los periodos correspondientes al grupo <em>Test</em> con cada uno de los modelos ajustados.</p></li>
+<li><p>Calcularemos el error de cada método con respecto a los datos del grupo <em>Test</em>.</p></li>
+<li><p>Elegiremos el modelo que obtenga el menor error.</p></li>
+<li><p>Actualizaremos los parámetros del método elegido utilizando los datos de ambos grupos para pronosticar periodos futuros.</p></li>
+</ol>
+<p> </p>
+</div>
+<div id="métodos-de-pronósticos" class="section level1" number="2">
+<h1><span class="header-section-number">2</span> Métodos de Pronósticos</h1>
+<p>Los métodos que utilizaremos son los llamados cuantitativos intrínsecos. Estos se basan en modelar patrones pasados para proyectarlos en el tiempo apoyándose en la suposición de que el pasado puede extenderse hacia el futuro. A diferencia de los métodos cualitativos o cuantitativos extrínsecos, que utilizan variables externas y juicios de personas expertas en el negocio, aquí el éxito en el resultado solo depende de que tan bien los modelos interpreten la información que esconden los datos.</p>
+<p> </p>
+<div id="métodos-simples" class="section level2" number="2.1">
+<h2><span class="header-section-number">2.1</span> Métodos Simples</h2>
+<p>La idea de estos métodos es que nos sirvan de base para el desarrollo de otros más complejos. Los vamos a comparar entre si y veremos si los modelos complejos son mejores que los modelos simples, si esto no pasa entonces desarrollar un modelo de mayor complejidad no vale la pena. Dentro de este grupo vamos a probar:</p>
+<ul>
+<li>Método del Promedio</li>
+<li>Método Naïve o Ingenuo</li>
+<li>Método Naïve Estacional</li>
+<li>Método Drift</li>
+</ul>
+<p> </p>
+</div>
+<div id="métodos-complejos" class="section level2" number="2.2">
+<h2><span class="header-section-number">2.2</span> Métodos Complejos</h2>
+<p>Los modelos complejos que vamos a desarrollar son:</p>
+<ul>
+<li>Suavización Exponencial Simple (SES)</li>
+<li>Suavización Exponencial de dos Parámetros (Holt)</li>
+<li>Suavización Exponencial de tres Parámetros (Holt-Winters)</li>
+<li>Modelos ARIMA.</li>
+</ul>
+<p> </p>
+</div>
+</div>
+<div id="error-de-pronósticos-métricas" class="section level1" number="3">
+<h1><span class="header-section-number">3</span> Error de Pronósticos (Métricas)</h1>
+<p>La exactitud de los modelos se medirá usando pronósticos genuinos, esto solo puede hacerse con datos que no hayan sido utilizados para entrenar los modelos, será nuestro grupo <em>Test</em>.</p>
+<p>Para el cálculo de los errores vamos a utilizar dos métricas ampliamente utilizadas, el MAE y el MAPE:</p>
+<ul>
+<li><strong>Desviación Media Absoluta (MAE: Mean Absolute Error)</strong>: es el valor absoluto de la diferencia entre la demanda real y el pronóstico, dividido el número de periodos <span class="math inline">\(N\)</span>. Así un MAE = 100 significa que se espera en promedio un error de 100 unidades en cada periodo pronosticado.</li>
+</ul>
+<p><span class="math display">\[MAE =  \frac{1}{N}\sum_{t=1}^{N} \mid{Real_{t} - Pronóstico_{t}}\mid\]</span></p>
+<ul>
+<li><strong>Error Absoluto Porcentual Medio (MAPE: Mean Absolute Percentage Error)</strong>: es la diferencia entre la demanda real y el pronóstico, expresado como un porcentaje de los valores reales, es decir mide el tamaño absoluto del error en términos porcentuales, por ejemplo un MAPE = 4% significa que se espera un error de un 4% en cada periodo pronosticado.</li>
+</ul>
+<p><span class="math display">\[MAPE =  \frac{1}{N}\frac{\sum_{t=1}^{N} \mid{Real_{t} - Pronóstico_{t}}\mid}{Real_{t}}*100\]</span></p>
+<p> </p>
+</div>
+<div id="carga-de-librerías-y-datos" class="section level1" number="4">
+<h1><span class="header-section-number">4</span> Carga de Librerías y Datos</h1>
+<p>Para comenzar con este proyecto vamos a cargar las librerías que vamos a necesitar para manipular y graficar los datos como así también la serie de ventas que analizaremos.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Carga de librerías</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(forecast)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lubridate)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tseries)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(kableExtra)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(formattable)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggpubr)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(zoo)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Carga de datos</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>ventas <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">&#39;datos_ventas.csv&#39;</span>)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>ventas <span class="sc">%&gt;%</span> <span class="fu">head</span>(<span class="dv">5</span>)</span></code></pre></div>
+<table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:center;">
+fecha
+</th>
+<th style="text-align:center;">
+unidades
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;">
+02/01/2006
+</td>
+<td style="text-align:center;">
+2088
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+02/01/2006
+</td>
+<td style="text-align:center;">
+1480
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+02/01/2006
+</td>
+<td style="text-align:center;">
+2270
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+02/01/2006
+</td>
+<td style="text-align:center;">
+6275
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+03/01/2006
+</td>
+<td style="text-align:center;">
+502
+</td>
+</tr>
+</tbody>
+</table>
+<p>Antes de seguir avanzando debemos verificar si el tipo de dato para cada columna de la serie es correcto.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>ventas <span class="sc">%&gt;%</span> <span class="fu">glimpse</span>()</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="do">## Rows: 3,263</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="do">## Columns: 2</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="do">## $ fecha    &lt;chr&gt; &quot;02/01/2006&quot;, &quot;02/01/2006&quot;, &quot;02/01/2006&quot;, &quot;02/01/2006&quot;, &quot;03/…</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="do">## $ unidades &lt;dbl&gt; 2088, 1480, 2270, 6275, 502, 303, 299, 514, 1542, 90, 1012, …</span></span></code></pre></div>
+<p>Vamos a modificar el tipo de dato del campo <code>fecha</code> por uno de tipo <em>date</em>.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>ventas<span class="sc">$</span>fecha <span class="ot">&lt;-</span> <span class="fu">dmy</span>(ventas<span class="sc">$</span>fecha)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>ventas <span class="sc">%&gt;%</span> <span class="fu">glimpse</span>()</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="do">## Rows: 3,263</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="do">## Columns: 2</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="do">## $ fecha    &lt;date&gt; 2006-01-02, 2006-01-02, 2006-01-02, 2006-01-02, 2006-01-03,…</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="do">## $ unidades &lt;dbl&gt; 2088, 1480, 2270, 6275, 502, 303, 299, 514, 1542, 90, 1012, …</span></span></code></pre></div>
+<p>A fin de compensar las variabilidades de ventas diarias, que es como han sido registrado nuestros datos, vamos a optar por acumularlas en meses.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>ventas_mes <span class="ot">&lt;-</span> ventas <span class="sc">%&gt;%</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(<span class="at">fecha =</span> <span class="fu">floor_date</span>(fecha, <span class="st">&quot;month&quot;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">unidades =</span> <span class="fu">sum</span>(unidades))</span></code></pre></div>
+<p>Veamos gráficamente como la serie de ventas mensuales es más estable con respecto a las ventas diarias.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Ventas diarias</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>diaria <span class="ot">&lt;-</span> ventas <span class="sc">%&gt;%</span> </span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> fecha, </span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>             <span class="at">y =</span> unidades)) <span class="sc">+</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">&#39;steelblue&#39;</span>) <span class="sc">+</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">&#39;Ventas Diarias&#39;</span>,</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">x     =</span> <span class="st">&#39;Periodo&#39;</span>,</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">y     =</span> <span class="st">&#39;Unidades&#39;</span>) <span class="sc">+</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.title.x =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">plot.title   =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>))</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Ventas mensuales  </span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>mensual <span class="ot">&lt;-</span> ventas_mes <span class="sc">%&gt;%</span> </span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> fecha, </span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>             <span class="at">y =</span> unidades)) <span class="sc">+</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">&#39;steelblue&#39;</span>) <span class="sc">+</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">&#39;Ventas Mensuales&#39;</span>,</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>       <span class="at">x     =</span> <span class="st">&#39;Periodo&#39;</span>,</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>       <span class="at">y     =</span> <span class="st">&#39;Unidades&#39;</span>) <span class="sc">+</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>))</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a><span class="fu">ggarrange</span>(diaria, mensual, <span class="at">ncol =</span> <span class="dv">1</span>, <span class="at">nrow =</span> <span class="dv">2</span>)</span></code></pre></div>
+<p><img src="index.es_files/figure-html/unnamed-chunk-6-1.png" width="80%" style="display: block; margin: auto;" /></p>
+<p> </p>
+</div>
+<div id="análisis-gráfico-y-exploración-de-patrones" class="section level1" number="5">
+<h1><span class="header-section-number">5</span> Análisis Gráfico y Exploración de Patrones</h1>
+<p>Los gráficos revelan muchas características y comportamientos como patrones, outliers y cambios a través del tiempo. Estas características deben ser incorporadas tanto como sea posible en los modelos de pronósticos, es por esto que utilizaremos diferentes gráficos para tratar de detectar que es lo que caracteriza a nuestros datos.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Transformamos la serie a un time series object</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>ts_ventas <span class="ot">&lt;-</span> <span class="fu">ts</span>(ventas_mes<span class="sc">$</span>unidades,</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>                 <span class="at">frequency =</span> <span class="dv">12</span>,</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>                 <span class="at">start     =</span> <span class="dv">2006</span>)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="fu">autoplot</span>(ts_ventas, <span class="at">color =</span> <span class="st">&#39;steelblue&#39;</span>) <span class="sc">+</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">&#39;Ventas Mensuales&#39;</span>) <span class="sc">+</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">&#39;Meses&#39;</span>,</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">&#39;Unidades&#39;</span>)</span></code></pre></div>
+<p><img src="index.es_files/figure-html/unnamed-chunk-7-1.png" width="80%" style="display: block; margin: auto;" /></p>
+<p>A través del gráfico podemos empezar a describir que características presentan los datos:</p>
+<ul>
+<li><p>La serie comienza con un patrón horizontal durante el primer semestre del 2006, entra en una tendencia decreciente hasta enero del 2007. A partir de aquí tiene una tendencia positiva que dura pocos periodos (hasta abril del 2007) para luego volver a entrar un periodo de pendiente negativa hasta finales del 2017. Finalmente se observa un patrón de movimiento horizontal en el último semestre de la serie.</p></li>
+<li><p>Con respecto a la estacionalidad no observamos ningún patrón a simple vista, de todas maneras vamos a realizar otros tipos de gráficos para descartar la presencia de la misma.</p></li>
+<li><p>No se observa ningún valor atípico que sea extremadamente alto o extremadamente bajo, sin embargo vamos a hacer una prueba para descartar la presencia de outliers.</p></li>
+</ul>
+<p> </p>
+<div id="valores-atípicos" class="section level2" number="5.1">
+<h2><span class="header-section-number">5.1</span> Valores Atípicos</h2>
+<p>Los valores anormalmente grandes o pequeños, aquellos que se espera que no se repitan en el futuro suelen considerarse valores atípicos u outliers. Los outliers confunden el reconocimiento de patrones y, además, los métodos que utilizaremos no funcionan bien ante la presencia de estos, la idea es modificarlos para hacerlos más consistentes con el resto de las observaciones.</p>
+<p>Es importante destacar que no es recomendable reemplazar outliers si no se los analiza en el contexto del negocio interpretando porqué ocurrieron. Para este casos práctico vamos a considerarlos como errores reemplazándolos por el valor sugerido por la función <strong>tsoutliers()</strong> del paquete <em>forecast</em>.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tsoutliers</span>(ts_ventas)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="do">## $index</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="do">## integer(0)</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="do">## $replacements</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="do">## numeric(0)</span></span></code></pre></div>
+<p>La función aplicada considera que no hay valores atípicos en la serie. Al no conocer los detalles que generaron los datos y el contexto del negocio no podemos hacer un mayor análisis al respecto.</p>
+<p> </p>
+</div>
+<div id="gráficos-estacional" class="section level2" number="5.2">
+<h2><span class="header-section-number">5.2</span> Gráficos Estacional</h2>
+<p>Utilizar gráficos estacionales nos permite observar en forma más clara si hay o no presencia de estacionalidad en la serie.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>ts_ventas <span class="sc">%&gt;%</span> </span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggseasonplot</span>(<span class="at">year.labels      =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>               <span class="at">year.labels.left =</span> <span class="cn">FALSE</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>              ) <span class="sc">+</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">&#39;Ventas Mensuales&#39;</span>,</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">x     =</span> <span class="st">&#39;Meses&#39;</span>,</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">y     =</span> <span class="st">&#39;Unidades&#39;</span>)</span></code></pre></div>
+<p><img src="index.es_files/figure-html/unnamed-chunk-9-1.png" width="80%" style="display: block; margin: auto;" /></p>
+<p>Podemos ver que existe un cierto comportamiento estacional:</p>
+<ul>
+<li><p>Tenemos constantes caídas de ventas en enero, junio, septiembre y diciembre.</p></li>
+<li><p>Tenemos constantes aumentos en febrero, mayo, julio.</p></li>
+</ul>
+</div>
+<div id="función-de-autocorrelación" class="section level2" number="5.3">
+<h2><span class="header-section-number">5.3</span> Función de Autocorrelación</h2>
+<p>Este gráfico prueba si las observaciones adyacentes están autocorrelacionadas, es decir, si hay correlación entre la observación 1 con 2, 2 con 3, 3 con 4 y así, esto se conoce como <em>correlación de lag uno</em>.
+Existirá autocorrelación si el coeficiente es significativamente distinto de cero, algo que se puede verificar observando si los picos sobrepasan el límite establecido por la prueba.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Gráfico de autocorrelación</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>ts_ventas <span class="sc">%&gt;%</span> </span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggAcf</span>(<span class="at">lag.max =</span> <span class="dv">30</span>) <span class="sc">+</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">&#39;Función de Autocorrelación&#39;</span>)</span></code></pre></div>
+<p><img src="index.es_files/figure-html/unnamed-chunk-10-1.png" width="80%" style="display: block; margin: auto;" /></p>
+<p>Cuando la serie presenta tendencia, la autocorrelación para desfasajes bajos tiende a ser grande y positiva porque las observaciones cercanas en el tiempo también son cercanas en tamaño pero a medida que aumenta el lag o desfasaje la autocorrelación disminuye. Se observa un poco de este comportamiento sobretodo en los primeros 6 lags de cuales los primeros tres son significativamente distintos de cero. Esto sugiere la existencia de una tendencia que no perdura en el tiempo.</p>
+<p>Con respecto a la estacionalidad, la curva sinusoidal formada por todos los picos indica cierta presencia de la misma pero sin coeficientes significativos no podemos considerarla como tal.</p>
+<p>Si bien no tenemos dudas de la existencia de tendencia en la serie, puede que dos ciclos y medio de datos (observaciones mensuales) dificulte entender si también existe estacionalidad. De todas maneras aplicaremos diferentes métodos que modelan y ajustan estos patrones.</p>
+<p> </p>
+</div>
+</div>
+<div id="grupo-train-y-grupo-test" class="section level1" number="6">
+<h1><span class="header-section-number">6</span> Grupo Train y Grupo Test</h1>
+<p>Una práctica común para evaluar los modelos de pronósticos es dejarnos las últimas observaciones para comparar lo pronosticado con lo real. Como nosotros estamos interesados en hacer pronósticos a corto plazo vamos a separar la serie en dos dejándonos las últimas 6 observaciones (todas aquellas que corresponden al primer semestre del 2008) para comparar resultados y luego pronosticaremos el segundo semestre de ese mismo año.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Grupo Train</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>ts_train <span class="ot">&lt;-</span> <span class="fu">window</span>(ts_ventas,</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>                   <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">2006</span>, <span class="dv">1</span>), </span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>                   <span class="at">end   =</span> <span class="fu">c</span>(<span class="dv">2007</span>, <span class="dv">12</span>))</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Grupo Test</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>ts_test <span class="ot">&lt;-</span> <span class="fu">window</span>(ts_ventas,</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>                  <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">2008</span>, <span class="dv">1</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Grupo Test</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>ts_test</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="do">##        Jan   Feb   Mar   Apr   May   Jun</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="do">## 2008 60108 72000 60296 67868 95008 43701</span></span></code></pre></div>
+<p> </p>
+</div>
+<div id="modelado" class="section level1" number="7">
+<h1><span class="header-section-number">7</span> Modelado</h1>
+<div id="métodos-básicos" class="section level2" number="7.1">
+<h2><span class="header-section-number">7.1</span> Métodos Básicos</h2>
+<p>Los modelos básicos que utilizaremos son los siguientes:</p>
+<ul>
+<li><p><strong>Método del Promedio</strong>: el pronóstico de los valores futuros es igual al promedio de los datos históricos.</p></li>
+<li><p><strong>Método Naïve</strong>: el pronóstico de los valores futuros es igual al valor de la última observación.</p></li>
+<li><p><strong>Método Naïve Estacional</strong>: el pronóstico de los valores futuros es igual al valor de la última observación para el mismo periodo pero del año anterior. Así el pronóstico para el mes de enero es igual al valor de enero del año anterior.</p></li>
+<li><p><strong>Método Drift</strong>: básicamente consiste en dibujar una recta entre la primera y la última observación de la serie y extrapolarla en el tiempo.</p></li>
+</ul>
+<div id="ajuste-de-modelos" class="section level3" number="7.1.1">
+<h3><span class="header-section-number">7.1.1</span> Ajuste de Modelos</h3>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Ajuste de pronosticos basicos </span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>mean_fc   <span class="ot">&lt;-</span> <span class="fu">meanf</span>(ts_train,  <span class="at">h =</span> <span class="dv">6</span>)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>naive_fc  <span class="ot">&lt;-</span> <span class="fu">rwf</span>(ts_train,    <span class="at">h =</span> <span class="dv">6</span>)</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>snaive_fc <span class="ot">&lt;-</span> <span class="fu">snaive</span>(ts_train, <span class="at">h =</span> <span class="dv">6</span>)</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>drift_fc  <span class="ot">&lt;-</span> <span class="fu">rwf</span>(ts_train,    <span class="at">h =</span> <span class="dv">6</span>, <span class="at">drift =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Gráficos de pronosticos basicos </span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">autoplot</span>(ts_train,   <span class="at">series =</span> <span class="st">&#39;Train&#39;</span>) <span class="sc">+</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(mean_fc<span class="sc">$</span>mean,  <span class="at">series =</span> <span class="st">&#39;Mean&#39;</span>) <span class="sc">+</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(naive_fc<span class="sc">$</span>mean, <span class="at">series =</span> <span class="st">&#39;Naïve&#39;</span>) <span class="sc">+</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(snaive_fc<span class="sc">$</span>mean, <span class="at">series =</span> <span class="st">&#39;SNaïve&#39;</span>) <span class="sc">+</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(drift_fc<span class="sc">$</span>mean, <span class="at">series =</span> <span class="st">&#39;Drift&#39;</span>) <span class="sc">+</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">colour =</span> <span class="fu">guide_legend</span>(<span class="at">title =</span> <span class="st">&quot;Serie&quot;</span>)) <span class="sc">+</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">&#39;Métodos Simples&#39;</span>,</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">&#39;Ajuste de Modelos (Train)&#39;</span>,</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">&#39;Mes&#39;</span>, </span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">&#39;Unidades&#39;</span>) <span class="sc">+</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">&#39;black&#39;</span>,</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;red&#39;</span>,</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;orange&#39;</span>,</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;violet&#39;</span>,</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;steelblue&#39;</span>))</span></code></pre></div>
+<p><img src="index.es_files/figure-html/unnamed-chunk-14-1.png" width="80%" style="display: block; margin: auto;" /></p>
+</div>
+<div id="evaluación-del-error" class="section level3" number="7.1.2">
+<h3><span class="header-section-number">7.1.2</span> Evaluación del error</h3>
+<p>En este punto utilizaremos el set de pruebas (Test) que definimos en un apartado anterior. El resumen de los resultados para los métodos simples es el siguiente:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Gráfico de errores de pronosticos basicos </span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">autoplot</span>(ts_train,   <span class="at">series =</span> <span class="st">&#39;Train&#39;</span>) <span class="sc">+</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(ts_test, <span class="at">series =</span> <span class="st">&#39;Test&#39;</span>) <span class="sc">+</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(mean_fc<span class="sc">$</span>mean,  <span class="at">series =</span> <span class="st">&#39;Mean&#39;</span>) <span class="sc">+</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(naive_fc<span class="sc">$</span>mean, <span class="at">series =</span> <span class="st">&#39;Naïve&#39;</span>) <span class="sc">+</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(snaive_fc<span class="sc">$</span>mean, <span class="at">series =</span> <span class="st">&#39;SNaïve&#39;</span>) <span class="sc">+</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(drift_fc<span class="sc">$</span>mean, <span class="at">series =</span> <span class="st">&#39;Drift&#39;</span>) <span class="sc">+</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">colour =</span> <span class="fu">guide_legend</span>(<span class="at">title =</span> <span class="st">&quot;Serie&quot;</span>)) <span class="sc">+</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">&#39;Métodos Simples&#39;</span>,</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">&#39;Error sobre el set de prueba (Test)&#39;</span>,</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">&#39;Mes&#39;</span>, </span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">&#39;Unidades&#39;</span>) <span class="sc">+</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">&#39;black&#39;</span>,</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;red&#39;</span>,</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;orange&#39;</span>,</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;violet&#39;</span>,</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;gray&#39;</span>,</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;steelblue&#39;</span>))</span></code></pre></div>
+<p><img src="index.es_files/figure-html/unnamed-chunk-15-1.png" width="80%" style="display: block; margin: auto;" /></p>
+<p>El método Naïve Estacional se acerca bastante a los datos reales (Test), esto es porque la serie tiene cierta estacionalidad, es decir, se repiten alguno patrones, pero también vimos que las ventas en forma general han disminuido con el tiempo por lo que no captura la caída de los próximos meses.
+El método del promedio sobrestima la demanda, en este caso puede que sea mejor utilizar el promedio del último año para descartar los valores altos del 2006.
+El método Naïve la subestima, solo captura la caída final. Por último el método Drift replica la tendencia a la baja y es que al tomar el primer y último valor para extrapolar una recta no es una buena idea en este caso, nuevamente por los altos valores del 2006.</p>
+<div style="border: 1px solid #ddd; padding: 5px; overflow-x: scroll; width:100%; ">
+<table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="empty-cells: hide;border-bottom:hidden;" colspan="1">
+</th>
+<th style="empty-cells: hide;border-bottom:hidden;" colspan="1">
+</th>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="8">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Resultados de los Métodos Simple
+</div>
+</th>
+</tr>
+<tr>
+<th style="empty-cells: hide;border-bottom:hidden;" colspan="1">
+</th>
+<th style="empty-cells: hide;border-bottom:hidden;" colspan="1">
+</th>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Promedio
+</div>
+</th>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Naïve
+</div>
+</th>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+SNaïve
+</div>
+</th>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Drift
+</div>
+</th>
+</tr>
+<tr>
+<th style="text-align:center;">
+Periodo
+</th>
+<th style="text-align:center;">
+Ventas
+</th>
+<th style="text-align:center;">
+Mean
+</th>
+<th style="text-align:center;">
+Error.Mean
+</th>
+<th style="text-align:center;">
+Naïve
+</th>
+<th style="text-align:center;">
+Error.Naïve
+</th>
+<th style="text-align:center;">
+SNaïve
+</th>
+<th style="text-align:center;">
+Error.SNaïve
+</th>
+<th style="text-align:center;">
+Drift
+</th>
+<th style="text-align:center;">
+Error.Drift
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;">
+2008-01
+</td>
+<td style="text-align:center;">
+60108
+</td>
+<td style="text-align:center;">
+97820
+</td>
+<td style="text-align:center;">
+-37712
+</td>
+<td style="text-align:center;">
+47936
+</td>
+<td style="text-align:center;">
+12172
+</td>
+<td style="text-align:center;">
+55415
+</td>
+<td style="text-align:center;">
+4693
+</td>
+<td style="text-align:center;">
+44612
+</td>
+<td style="text-align:center;">
+15496
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-02
+</td>
+<td style="text-align:center;">
+72000
+</td>
+<td style="text-align:center;">
+97820
+</td>
+<td style="text-align:center;">
+-25820
+</td>
+<td style="text-align:center;">
+47936
+</td>
+<td style="text-align:center;">
+24064
+</td>
+<td style="text-align:center;">
+69103
+</td>
+<td style="text-align:center;">
+2897
+</td>
+<td style="text-align:center;">
+41288
+</td>
+<td style="text-align:center;">
+30712
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-03
+</td>
+<td style="text-align:center;">
+60296
+</td>
+<td style="text-align:center;">
+97820
+</td>
+<td style="text-align:center;">
+-37524
+</td>
+<td style="text-align:center;">
+47936
+</td>
+<td style="text-align:center;">
+12360
+</td>
+<td style="text-align:center;">
+89111
+</td>
+<td style="text-align:center;">
+-28815
+</td>
+<td style="text-align:center;">
+37964
+</td>
+<td style="text-align:center;">
+22332
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-04
+</td>
+<td style="text-align:center;">
+67868
+</td>
+<td style="text-align:center;">
+97820
+</td>
+<td style="text-align:center;">
+-29952
+</td>
+<td style="text-align:center;">
+47936
+</td>
+<td style="text-align:center;">
+19932
+</td>
+<td style="text-align:center;">
+88087
+</td>
+<td style="text-align:center;">
+-20219
+</td>
+<td style="text-align:center;">
+34640
+</td>
+<td style="text-align:center;">
+33228
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-05
+</td>
+<td style="text-align:center;">
+95008
+</td>
+<td style="text-align:center;">
+97820
+</td>
+<td style="text-align:center;">
+-2812
+</td>
+<td style="text-align:center;">
+47936
+</td>
+<td style="text-align:center;">
+47072
+</td>
+<td style="text-align:center;">
+110628
+</td>
+<td style="text-align:center;">
+-15620
+</td>
+<td style="text-align:center;">
+31316
+</td>
+<td style="text-align:center;">
+63692
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-06
+</td>
+<td style="text-align:center;">
+43701
+</td>
+<td style="text-align:center;">
+97820
+</td>
+<td style="text-align:center;">
+-54119
+</td>
+<td style="text-align:center;">
+47936
+</td>
+<td style="text-align:center;">
+-4235
+</td>
+<td style="text-align:center;">
+90796
+</td>
+<td style="text-align:center;">
+-47095
+</td>
+<td style="text-align:center;">
+27992
+</td>
+<td style="text-align:center;">
+15709
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p> </p>
+<table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="3">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Error de pronósticos sobre el grupo test
+</div>
+</th>
+</tr>
+<tr>
+<th style="text-align:center;">
+MÉTODO
+</th>
+<th style="text-align:center;">
+MAE
+</th>
+<th style="text-align:center;">
+MAPE
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;width: 3cm; ">
+Promedio
+</td>
+<td style="text-align:center;width: 3cm; ">
+31323
+</td>
+<td style="text-align:center;width: 3cm; ">
+55.3
+</td>
+</tr>
+<tr>
+<td style="text-align:center;width: 3cm; ">
+Naïve
+</td>
+<td style="text-align:center;width: 3cm; ">
+19972
+</td>
+<td style="text-align:center;width: 3cm; ">
+27.1
+</td>
+</tr>
+<tr>
+<td style="text-align:center;width: 3cm; ">
+SNaïve
+</td>
+<td style="text-align:center;width: 3cm; ">
+19890
+</td>
+<td style="text-align:center;width: 3cm; ">
+35.6
+</td>
+</tr>
+<tr>
+<td style="text-align:center;width: 3cm; ">
+Drift
+</td>
+<td style="text-align:center;width: 3cm; ">
+30195
+</td>
+<td style="text-align:center;width: 3cm; ">
+42.9
+</td>
+</tr>
+</tbody>
+</table>
+<p>Tanto el modelo Naïve como el Naïve Estacional tienen un MAE similar, pero el segundo tiene mayor porcentaje de error (35.6%), esto es causado principalmente por la caída abrupta del último periodo.</p>
+<p> </p>
+</div>
+</div>
+<div id="suavización-exponencial-simple" class="section level2" number="7.2">
+<h2><span class="header-section-number">7.2</span> Suavización Exponencial Simple</h2>
+<p>El primer método de suavización que utilizaremos es el de Suavización Exponencial Simple (SES), muy utilizado para los casos en donde no se ven patrones claros de tendencia. Este método toma como pronóstico el pronóstico del periodo anterior más/menos una corrección, para esto se vale de un parámetro <span class="math inline">\(\alpha\)</span> que determina el grado hasta el cual las observaciones más recientes pueden o no influir en el valor del pronóstico. El coeficiente <span class="math inline">\(\alpha\)</span> puede tomar valores entre cero y uno, normalmente se aconseja utilizar un valor alto para series suaves y un valor bajo para series muy aleatorias. Sin embargo la forma más confiable de seleccionar un buen parámetro es estimándolo de las observaciones pasadas optimizando la suma de los cuadrados de los errores (SSE: Sum of Squared Errors) dado por la siguiente fórmula:</p>
+<p><span class="math display">\[SSE = \sum_{t=1}^{N} (Real_{t} - Pronóstico_{t})^2\]</span></p>
+<p>Las funciones que aplicaremos nos darán automáticamente los parámetros y valores iniciales que minimizan el SSE y que se ajustan a las restricciones de los coeficientes, para este modelo se restringe <span class="math inline">\(0\leq\alpha\leq1\)</span>.</p>
+<div id="ajuste-del-modelo" class="section level3" number="7.2.1">
+<h3><span class="header-section-number">7.2.1</span> Ajuste del Modelo</h3>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Ajuste del modelo SES</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>ses_fc <span class="ot">&lt;-</span> <span class="fu">ses</span>(ts_train, <span class="at">h =</span> <span class="dv">6</span>, <span class="at">lambda =</span> <span class="dv">0</span>)</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>ses_fc[[<span class="st">&quot;model&quot;</span>]]</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="do">## Simple exponential smoothing </span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="do">## Call:</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="do">##  ses(y = ts_train, h = 6, lambda = 0) </span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="do">##   Box-Cox transformation: lambda= 0 </span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="do">##   Smoothing parameters:</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a><span class="do">##     alpha = 0.6854 </span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a><span class="do">##   Initial states:</span></span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a><span class="do">##     l = 11.7851 </span></span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a><span class="do">##   sigma:  0.2556</span></span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a><span class="do">##      AIC     AICc      BIC </span></span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a><span class="do">## 14.70329 15.90329 18.23745</span></span></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Gráfico del modelo SES ajustado</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">autoplot</span>(ts_train, <span class="at">series =</span> <span class="st">&#39;Train&#39;</span>) <span class="sc">+</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(<span class="fu">fitted</span>(ses_fc), <span class="at">series =</span> <span class="st">&#39;Ajuste&#39;</span>) <span class="sc">+</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">color =</span> <span class="fu">guide_legend</span>(<span class="st">&#39;Serie&#39;</span>)) <span class="sc">+</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">&#39;Suavización Exponencial Simple&#39;</span>,</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">&#39;Ajuste del Modelo (Train)&#39;</span>,</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">&#39;Meses&#39;</span>, </span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">&#39;Unidades&#39;</span>) <span class="sc">+</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">&#39;red&#39;</span>,</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;steelblue&#39;</span>))</span></code></pre></div>
+<p><img src="index.es_files/figure-html/unnamed-chunk-20-1.png" width="80%" style="display: block; margin: auto;" /></p>
+</div>
+<div id="evaluación-del-error-1" class="section level3" number="7.2.2">
+<h3><span class="header-section-number">7.2.2</span> Evaluación del Error</h3>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># # Gráfico de errores de pronostico SES</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">autoplot</span>(ts_train, <span class="at">series =</span> <span class="st">&#39;Train&#39;</span>) <span class="sc">+</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(ses_fc<span class="sc">$</span>mean, <span class="at">series =</span> <span class="st">&#39;Pronóstico&#39;</span>) <span class="sc">+</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(<span class="fu">fitted</span>(ses_fc), <span class="at">series =</span> <span class="st">&#39;Ajuste&#39;</span>) <span class="sc">+</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(ts_test, <span class="at">series =</span> <span class="st">&#39;Test&#39;</span>) <span class="sc">+</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">color =</span> <span class="fu">guide_legend</span>(<span class="st">&#39;Serie&#39;</span>)) <span class="sc">+</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">&#39;Suavización Exponencial Simple&#39;</span>,</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">&#39;Pronóstico sobre el set de prueba (Test)&#39;</span>,</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">&#39;Meses&#39;</span>, </span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">&#39;Unidades&#39;</span>) <span class="sc">+</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">&#39;red&#39;</span>,</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;orange&#39;</span>,</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;grey&#39;</span>, </span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;steelblue&#39;</span>))</span></code></pre></div>
+<p><img src="index.es_files/figure-html/unnamed-chunk-21-1.png" width="80%" style="display: block; margin: auto;" /></p>
+<p>Un <span class="math inline">\(\alpha\)</span> de 0.68 permite una reacción rápida a los cambios pero no suaviza demasiado la aleatoriedad. De todas maneras vemos buenos resultados sobre los datos de prueba.</p>
+<table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="4">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+SES
+</div>
+</th>
+</tr>
+<tr>
+<th style="text-align:center;">
+Periodo
+</th>
+<th style="text-align:center;">
+Ventas
+</th>
+<th style="text-align:center;">
+Pronóstico
+</th>
+<th style="text-align:center;">
+Error
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;">
+2008-01
+</td>
+<td style="text-align:center;">
+60108
+</td>
+<td style="text-align:center;">
+55703
+</td>
+<td style="text-align:center;">
+4405
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-02
+</td>
+<td style="text-align:center;">
+72000
+</td>
+<td style="text-align:center;">
+55703
+</td>
+<td style="text-align:center;">
+16297
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-03
+</td>
+<td style="text-align:center;">
+60296
+</td>
+<td style="text-align:center;">
+55703
+</td>
+<td style="text-align:center;">
+4593
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-04
+</td>
+<td style="text-align:center;">
+67868
+</td>
+<td style="text-align:center;">
+55703
+</td>
+<td style="text-align:center;">
+12165
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-05
+</td>
+<td style="text-align:center;">
+95008
+</td>
+<td style="text-align:center;">
+55703
+</td>
+<td style="text-align:center;">
+39305
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-06
+</td>
+<td style="text-align:center;">
+43701
+</td>
+<td style="text-align:center;">
+55703
+</td>
+<td style="text-align:center;">
+-12002
+</td>
+</tr>
+</tbody>
+</table>
+<table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="3">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Error de pronósticos sobre el grupo test
+</div>
+</th>
+</tr>
+<tr>
+<th style="text-align:center;">
+MÉTODO
+</th>
+<th style="text-align:center;">
+MAE
+</th>
+<th style="text-align:center;">
+MAPE
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;width: 3cm; ">
+SES
+</td>
+<td style="text-align:center;width: 3cm; ">
+14795
+</td>
+<td style="text-align:center;width: 3cm; ">
+20.7
+</td>
+</tr>
+</tbody>
+</table>
+<p>Con un 20.7% de error porcentual promedio, el modelo SES es el que mejor resultado nos ofrece hasta el momento.</p>
+<p> </p>
+</div>
+</div>
+<div id="suavización-exponencial-de-holt" class="section level2" number="7.3">
+<h2><span class="header-section-number">7.3</span> Suavización Exponencial de Holt</h2>
+<p>Para los casos en donde si existe tendencia es posible utilizar el método de Holt o Suavización Exponencial de dos Parámetros. Este modelo es similar al SES pero utiliza dos factores, uno para suavizar la aleatoriedad y otro para corregir la tendencia, una buena combinación de estos es la clave de un buen modelo.</p>
+<p>El modelo de Holt genera un pronóstico de tendencia constante creciente o decreciente en forma indefinida en el tiempo produciendo grandes errores para pronósticos a mediano y largo plazo. Si bien no es nuestro caso, vamos a utilizar un tercer parámetro que permite aplanar la pendiente a medida que transcurren los periodos. En resumen, tenemos los siguientes coeficientes de ajuste:</p>
+<ul>
+<li><p><span class="math inline">\(\alpha\)</span>: coeficiente de atenuación de los datos. Valores cercanos a 1 indican que reacciona rápido a los cambios.</p></li>
+<li><p><span class="math inline">\(\beta\)</span>: coeficiente de atenuación de la tendencia, valores cercanos a 0 replicará completamente la tendencia a los nuevos datos.</p></li>
+<li><p><span class="math inline">\(\phi\)</span>: coeficiente que aplana la tendencia en pronósticos a largo plazo. Valores cercanos a 0 la atenuará en forma más repentina.</p></li>
+</ul>
+<p>La función <strong>holt()</strong> del paquete <em>forecast</em> encuentra la mejor combinación de los coeficientes minimizando el SSE.</p>
+<div id="ajuste-del-modelo-1" class="section level3" number="7.3.1">
+<h3><span class="header-section-number">7.3.1</span> Ajuste del Modelo</h3>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Ajuste del modelo Holt</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>holt_fc <span class="ot">&lt;-</span> <span class="fu">holt</span>(ts_train,</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>                <span class="at">damped =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>                <span class="at">h =</span> <span class="dv">6</span>,</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>                <span class="at">lambda =</span> <span class="dv">0</span>)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>holt_fc[[<span class="st">&quot;model&quot;</span>]]</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="do">## Damped Holt&#39;s method </span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="do">## Call:</span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="do">##  holt(y = ts_train, h = 6, damped = TRUE, lambda = 0) </span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="do">##   Box-Cox transformation: lambda= 0 </span></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a><span class="do">##   Smoothing parameters:</span></span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a><span class="do">##     alpha = 0.6141 </span></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a><span class="do">##     beta  = 1e-04 </span></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a><span class="do">##     phi   = 0.98 </span></span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a><span class="do">##   Initial states:</span></span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a><span class="do">##     l = 11.8676 </span></span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a><span class="do">##     b = -0.049 </span></span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a><span class="do">##   sigma:  0.2683</span></span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a><span class="do">##      AIC     AICc      BIC </span></span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a><span class="do">## 19.51379 24.45497 26.58212</span></span></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Gráfico del modelo Holt ajustado</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">autoplot</span>(ts_train, <span class="at">series =</span> <span class="st">&#39;Train&#39;</span>) <span class="sc">+</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(<span class="fu">fitted</span>(holt_fc), <span class="at">series =</span> <span class="st">&#39;Ajuste&#39;</span>) <span class="sc">+</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">&#39;Método de Holt&#39;</span>,</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">&#39;Ajuste del Modelo (Train)&#39;</span>,</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">&#39;Meses&#39;</span>, </span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">&#39;Unidades&#39;</span>) <span class="sc">+</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">color =</span> <span class="fu">guide_legend</span>(<span class="st">&#39;Serie&#39;</span>)) <span class="sc">+</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">&#39;red&#39;</span>,</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;steelblue&#39;</span>))</span></code></pre></div>
+<p><img src="index.es_files/figure-html/unnamed-chunk-26-1.png" width="80%" style="display: block; margin: auto;" /></p>
+</div>
+<div id="evaluación-del-error-2" class="section level3" number="7.3.2">
+<h3><span class="header-section-number">7.3.2</span> Evaluación del Error</h3>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Gráfico de errores de pronostico Holt </span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">autoplot</span>(ts_train, <span class="at">series =</span> <span class="st">&#39;Train&#39;</span>) <span class="sc">+</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(holt_fc<span class="sc">$</span>mean, <span class="at">series =</span> <span class="st">&#39;Pronóstico&#39;</span>) <span class="sc">+</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(ts_test, <span class="at">series =</span> <span class="st">&quot;Real&quot;</span>) <span class="sc">+</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">&#39;Método de Holt&#39;</span>,</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">&#39;Pronóstico sobre el set de prueba (Test)&#39;</span>,</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">&#39;Meses&#39;</span>, </span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">&#39;Unidades&#39;</span>) <span class="sc">+</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">color =</span> <span class="fu">guide_legend</span>(<span class="st">&#39;Serie&#39;</span>)) <span class="sc">+</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;orange&#39;</span>,</span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;grey&#39;</span>,</span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;steelblue&#39;</span>))</span></code></pre></div>
+<p><img src="index.es_files/figure-html/unnamed-chunk-27-1.png" width="80%" style="display: block; margin: auto;" /></p>
+<p>Los resultados observados se asemejan al modelo SES, con la diferencia que el Holt le incorpora cierta tendencia al pronosticos.</p>
+<table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="4">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Holt
+</div>
+</th>
+</tr>
+<tr>
+<th style="text-align:center;">
+Periodo
+</th>
+<th style="text-align:center;">
+Ventas
+</th>
+<th style="text-align:center;">
+Pronóstico
+</th>
+<th style="text-align:center;">
+Error
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;">
+2008-01
+</td>
+<td style="text-align:center;">
+60108
+</td>
+<td style="text-align:center;">
+54881
+</td>
+<td style="text-align:center;">
+5227
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-02
+</td>
+<td style="text-align:center;">
+72000
+</td>
+<td style="text-align:center;">
+53313
+</td>
+<td style="text-align:center;">
+18687
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-03
+</td>
+<td style="text-align:center;">
+60296
+</td>
+<td style="text-align:center;">
+51820
+</td>
+<td style="text-align:center;">
+8476
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-04
+</td>
+<td style="text-align:center;">
+67868
+</td>
+<td style="text-align:center;">
+50397
+</td>
+<td style="text-align:center;">
+17471
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-05
+</td>
+<td style="text-align:center;">
+95008
+</td>
+<td style="text-align:center;">
+49041
+</td>
+<td style="text-align:center;">
+45967
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-06
+</td>
+<td style="text-align:center;">
+43701
+</td>
+<td style="text-align:center;">
+47747
+</td>
+<td style="text-align:center;">
+-4046
+</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>resumen_holt <span class="sc">%&gt;%</span> <span class="fu">kbl</span>(<span class="at">align =</span> <span class="st">&#39;c&#39;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable_styling</span>(<span class="at">bootstrap_options =</span> <span class="st">&#39;striped&#39;</span>,</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>                <span class="at">full_width        =</span> F,</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>                <span class="at">position          =</span> <span class="st">&#39;center&#39;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_header_above</span>(<span class="fu">c</span>(<span class="st">&quot;Error de Pronósticos&quot;</span> <span class="ot">=</span> <span class="dv">3</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">column_spec</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>, <span class="at">width =</span> <span class="st">&quot;3cm&quot;</span>)</span></code></pre></div>
+<table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="3">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Error de Pronósticos
+</div>
+</th>
+</tr>
+<tr>
+<th style="text-align:center;">
+MÉTODO
+</th>
+<th style="text-align:center;">
+MAE
+</th>
+<th style="text-align:center;">
+MAPE
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;width: 3cm; ">
+Holt
+</td>
+<td style="text-align:center;width: 3cm; ">
+16646
+</td>
+<td style="text-align:center;width: 3cm; ">
+22
+</td>
+</tr>
+</tbody>
+</table>
+<p>Con un error porcentual de 22% es apenas un par de puntos mejor que el modelo Naïve.</p>
+<p> </p>
+</div>
+</div>
+<div id="suavización-exponencial-de-3-parámetros-holt-winters" class="section level2" number="7.4">
+<h2><span class="header-section-number">7.4</span> Suavización Exponencial de 3 parámetros (Holt-Winters)</h2>
+<p>El modelo de Holt-Winters extiende el modelo de dos parámetros de Holt para incorporar un tercer parámetro que modela la estacionalidad de la serie. Hay dos variaciones de este método y su aplicación depende de como cambie la estacionalidad en el tiempo, se prefiere un modelo aditivo si es constante y un multiplicativo si cambia proporcionalmente con el nivel de la serie. Vamos a aplicar ambas variantes a nuestros datos y a comparar los resultados.</p>
+<div id="ajuste-de-los-modelos" class="section level3" number="7.4.1">
+<h3><span class="header-section-number">7.4.1</span> Ajuste de los Modelos</h3>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Ajuste del modelo Holt-Winters Aditivo</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>winA_fc <span class="ot">&lt;-</span> <span class="fu">hw</span>(ts_train,</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>              <span class="at">seasonal =</span> <span class="st">&#39;additive&#39;</span>,</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>              <span class="at">h =</span> <span class="dv">6</span>)</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>winA_fc[[<span class="st">&#39;model&#39;</span>]]</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="do">## Holt-Winters&#39; additive method </span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a><span class="do">## Call:</span></span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a><span class="do">##  hw(y = ts_train, h = 6, seasonal = &quot;additive&quot;) </span></span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a><span class="do">##   Smoothing parameters:</span></span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a><span class="do">##     alpha = 0.5154 </span></span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a><span class="do">##     beta  = 1e-04 </span></span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a><span class="do">##     gamma = 1e-04 </span></span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a><span class="do">##   Initial states:</span></span>
+<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a><span class="do">##     l = 136441.2172 </span></span>
+<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a><span class="do">##     b = -2968.0323 </span></span>
+<span id="cb22-19"><a href="#cb22-19" aria-hidden="true" tabindex="-1"></a><span class="do">##     s = -42954.41 -10285.61 -30952.43 -12578.84 -5426.385 48976.92</span></span>
+<span id="cb22-20"><a href="#cb22-20" aria-hidden="true" tabindex="-1"></a><span class="do">##            10933.15 28037.7 4227.078 17557.44 20714.68 -28249.3</span></span>
+<span id="cb22-21"><a href="#cb22-21" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb22-22"><a href="#cb22-22" aria-hidden="true" tabindex="-1"></a><span class="do">##   sigma:  27751.93</span></span>
+<span id="cb22-23"><a href="#cb22-23" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb22-24"><a href="#cb22-24" aria-hidden="true" tabindex="-1"></a><span class="do">##      AIC     AICc      BIC </span></span>
+<span id="cb22-25"><a href="#cb22-25" aria-hidden="true" tabindex="-1"></a><span class="do">## 574.9975 676.9975 595.0244</span></span></code></pre></div>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Ajuste del modelo Holt-Winters Multiplicativo</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>winM_fc <span class="ot">&lt;-</span> <span class="fu">hw</span>(ts_train,</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>              <span class="at">seasonal =</span> <span class="st">&#39;multiplicative&#39;</span>,</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>              <span class="at">h =</span> <span class="dv">6</span>)</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>winM_fc[[<span class="st">&#39;model&#39;</span>]]</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a><span class="do">## Holt-Winters&#39; multiplicative method </span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a><span class="do">## Call:</span></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a><span class="do">##  hw(y = ts_train, h = 6, seasonal = &quot;multiplicative&quot;) </span></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a><span class="do">##   Smoothing parameters:</span></span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a><span class="do">##     alpha = 0.2914 </span></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a><span class="do">##     beta  = 0.0045 </span></span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a><span class="do">##     gamma = 0.0029 </span></span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a><span class="do">##   Initial states:</span></span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a><span class="do">##     l = 136441.8407 </span></span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a><span class="do">##     b = -3090.0416 </span></span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a><span class="do">##     s = 0.6003 0.9964 0.7372 0.9046 0.9352 1.3815</span></span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a><span class="do">##            1.0651 1.2778 1.0681 1.126 1.1005 0.8073</span></span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a><span class="do">##   sigma:  0.3262</span></span>
+<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a><span class="do">##      AIC     AICc      BIC </span></span>
+<span id="cb23-25"><a href="#cb23-25" aria-hidden="true" tabindex="-1"></a><span class="do">## 577.7923 679.7923 597.8192</span></span></code></pre></div>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Gráficos de ajuste de los modelos Holt-Winters</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="fu">autoplot</span>(ts_train, <span class="at">series =</span> <span class="st">&#39;Train&#39;</span>) <span class="sc">+</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(<span class="fu">fitted</span>(winA_fc), <span class="at">series =</span> <span class="st">&#39;Ajuste HWA&#39;</span>) <span class="sc">+</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(<span class="fu">fitted</span>(winM_fc), <span class="at">series =</span> <span class="st">&#39;Ajuste HWM&#39;</span>) <span class="sc">+</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">&#39;Métodos de Holt-Winters&#39;</span>,</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">&#39;Ajuste del Modelo (Train)&#39;</span>,</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">&#39;Meses&#39;</span>, </span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">&#39;Unidades&#39;</span>) <span class="sc">+</span></span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">color =</span> <span class="fu">guide_legend</span>(<span class="st">&#39;Serie&#39;</span>)) <span class="sc">+</span></span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">&#39;red&#39;</span>,</span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;orange&#39;</span>,</span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;steelblue&#39;</span>))</span></code></pre></div>
+<p><img src="index.es_files/figure-html/unnamed-chunk-33-1.png" width="80%" style="display: block; margin: auto;" /></p>
+</div>
+<div id="evaluación-del-error-3" class="section level3" number="7.4.2">
+<h3><span class="header-section-number">7.4.2</span> Evaluación del Error</h3>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Gráfico de errores de pronosticos Holt-Winters</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="fu">autoplot</span>(ts_train, <span class="at">series =</span> <span class="st">&#39;Train&#39;</span>) <span class="sc">+</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(winA_fc<span class="sc">$</span>mean, <span class="at">series =</span> <span class="st">&#39;Pronóstico HWA&#39;</span>) <span class="sc">+</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(winM_fc<span class="sc">$</span>mean, <span class="at">series =</span> <span class="st">&#39;Pronóstico HWM&#39;</span>) <span class="sc">+</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(ts_test, <span class="at">series =</span> <span class="st">&#39;Test&#39;</span>) <span class="sc">+</span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">&#39;Métodos de Holt-Winters&#39;</span>,</span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">&#39;Pronóstico sobre el set de prueba (Test)&#39;</span>,</span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">&#39;Meses&#39;</span>, </span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">&#39;Unidades&#39;</span>) <span class="sc">+</span></span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">color =</span> <span class="fu">guide_legend</span>(<span class="st">&#39;Serie&#39;</span>)) <span class="sc">+</span></span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">&#39;red&#39;</span>,</span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;orange&#39;</span>,</span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;grey&#39;</span>,</span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;steelblue&#39;</span>))</span></code></pre></div>
+<p><img src="index.es_files/figure-html/unnamed-chunk-34-1.png" width="80%" style="display: block; margin: auto;" /></p>
+<table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="empty-cells: hide;border-bottom:hidden;" colspan="1">
+</th>
+<th style="empty-cells: hide;border-bottom:hidden;" colspan="1">
+</th>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+HW Aditivo
+</div>
+</th>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="2">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+HW Multiplicativo
+</div>
+</th>
+</tr>
+<tr>
+<th style="text-align:center;">
+Periodo
+</th>
+<th style="text-align:center;">
+Ventas
+</th>
+<th style="text-align:center;">
+Pronóstico.A.
+</th>
+<th style="text-align:center;">
+Error.A.
+</th>
+<th style="text-align:center;">
+Pronóstico.M.
+</th>
+<th style="text-align:center;">
+Error.M.
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;">
+2008-01
+</td>
+<td style="text-align:center;">
+60108
+</td>
+<td style="text-align:center;">
+56854
+</td>
+<td style="text-align:center;">
+3254
+</td>
+<td style="text-align:center;">
+58809
+</td>
+<td style="text-align:center;">
+1299
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-02
+</td>
+<td style="text-align:center;">
+72000
+</td>
+<td style="text-align:center;">
+102848
+</td>
+<td style="text-align:center;">
+-30848
+</td>
+<td style="text-align:center;">
+76981
+</td>
+<td style="text-align:center;">
+-4981
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-03
+</td>
+<td style="text-align:center;">
+60296
+</td>
+<td style="text-align:center;">
+96733
+</td>
+<td style="text-align:center;">
+-36437
+</td>
+<td style="text-align:center;">
+75594
+</td>
+<td style="text-align:center;">
+-15298
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-04
+</td>
+<td style="text-align:center;">
+67868
+</td>
+<td style="text-align:center;">
+80440
+</td>
+<td style="text-align:center;">
+-12572
+</td>
+<td style="text-align:center;">
+68653
+</td>
+<td style="text-align:center;">
+-785
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-05
+</td>
+<td style="text-align:center;">
+95008
+</td>
+<td style="text-align:center;">
+101286
+</td>
+<td style="text-align:center;">
+-6278
+</td>
+<td style="text-align:center;">
+78477
+</td>
+<td style="text-align:center;">
+16531
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-06
+</td>
+<td style="text-align:center;">
+43701
+</td>
+<td style="text-align:center;">
+81218
+</td>
+<td style="text-align:center;">
+-37517
+</td>
+<td style="text-align:center;">
+62364
+</td>
+<td style="text-align:center;">
+-18663
+</td>
+</tr>
+</tbody>
+</table>
+<table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="3">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Error de pronósticos sobre el grupo test
+</div>
+</th>
+</tr>
+<tr>
+<th style="text-align:center;">
+MÉTODO
+</th>
+<th style="text-align:center;">
+MAE
+</th>
+<th style="text-align:center;">
+MAPE
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;width: 3cm; ">
+HWA
+</td>
+<td style="text-align:center;width: 3cm; ">
+21151
+</td>
+<td style="text-align:center;width: 3cm; ">
+36.6
+</td>
+</tr>
+<tr>
+<td style="text-align:center;width: 3cm; ">
+HWM
+</td>
+<td style="text-align:center;width: 3cm; ">
+9593
+</td>
+<td style="text-align:center;width: 3cm; ">
+16.0
+</td>
+</tr>
+</tbody>
+</table>
+<p>El método del Holt-Winters Multiplicativo arrojó un 16% de promedio de error por período, por el momento es el mejor modelo obtenido.</p>
+<p> </p>
+</div>
+</div>
+<div id="modelos-arima" class="section level2" number="7.5">
+<h2><span class="header-section-number">7.5</span> Modelos ARIMA</h2>
+<p>Arima es otro modelo ampliamente utilizado para el pronóstico de series temporales. Es un método que combina modelos de diferenciación, autorregresión y medias móviles y que, a diferencia de los modelos de suavización, se basa en el análisis de la autocorrelación de los datos de la serie pero requiere como condición que esta sea estacionaria, si esto no se cumple no se puede aplicar el modelo.</p>
+<p>Una serie estacionaria es aquella cuyas propiedades no dependen del tiempo en que observada. Es decir, series con tendencia o estacionalidad son series no estacionarias ya que estas afectan al valor de la observación en periodos diferentes. Algunos casos pueden ser confusos, pero en general una serie estacionaria es aquella que no tiene patrones que se puedan predecir en el tiempo.</p>
+<p>Transformaciones logarítmicas, diferencias de primer y segundo orden y diferencias de orden estacional son herramientas que nos permitirán llevar una serie con patrones de tendencia y estacionalidad a una serie estacionaria.</p>
+<p>Para una serie sin estacionalidad (como la vamos a considerar en este modelo) es necesario encontrar solo 3 parámetros para ajustar el modelo ARIMA:</p>
+<ul>
+<li>p: orden del modelo autorregresivo</li>
+<li>d: número de diferencias no estacionales</li>
+<li>q: orden del modelo de media móvil</li>
+</ul>
+<p>Para poder encontrar estos parámetros nos debemos ayudar del análisis de los gráficos de autocorrelación y de autocorrelaciones parcial de la serie.</p>
+<p>La serie que estamos analizando presenta tendencias positivas y negativas lo que indicaría que no es estacionaria. Formalmente podemos utilizar el test de Dickey-Fuller para corroborar si una serie es o no estacionaria. Las hipótesis de este test son las siguientes:</p>
+<ul>
+<li><p><span class="math inline">\(H_{0}\)</span> : La serie no es estacionaria.</p></li>
+<li><p><span class="math inline">\(H_{1}\)</span> : La serie es estacionaria.</p></li>
+</ul>
+<p>Rechazamos <span class="math inline">\(H_{0}\)</span> si el p-value &lt; 0.05 con un 95% de confianza.</p>
+<p>Apliquemos el test a nuestra serie:</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">adf.test</span>(ts_train, <span class="at">alternative =</span> <span class="st">&#39;stationary&#39;</span>)</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="do">##  Augmented Dickey-Fuller Test</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="do">## data:  ts_train</span></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a><span class="do">## Dickey-Fuller = -2.0603, Lag order = 2, p-value = 0.5494</span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a><span class="do">## alternative hypothesis: stationary</span></span></code></pre></div>
+<p>El test de Dickey-Fuller indica que no podemos rechazar la hipótesis nula (p-value &gt; 0.05) lo que indica que la serie es no estacionaria.</p>
+<p>Una artilugio para eliminar la tendencia es realizar la diferencia de primer orden, veamos si esto funciona.</p>
+<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cbind</span>(<span class="st">&quot;Serie original&quot;</span> <span class="ot">=</span> ts_train,</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>      <span class="st">&#39;1er diferencia&#39;</span> <span class="ot">=</span> <span class="fu">diff</span>(ts_train)) <span class="sc">%&gt;%</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autoplot</span>(<span class="at">facets =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>           <span class="at">color  =</span> <span class="st">&#39;steelblue&#39;</span>) <span class="sc">+</span></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">&#39;Ventas&#39;</span>,</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">x     =</span> <span class="st">&#39;Meses&#39;</span>)</span></code></pre></div>
+<p><img src="index.es_files/figure-html/unnamed-chunk-39-1.png" width="80%" style="display: block; margin: auto;" /></p>
+<p>La serie de primeras diferencias ya parece estacionaria, se ha perdido la tendencia y además vemos como las observaciones se ubican alrededor de una media de cero con una varianza que no cambia en el tiempo. Confirmemos con un nuevo test de Dickey-Fuller.</p>
+<div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>ts_train <span class="sc">%&gt;%</span> </span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">diff</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">adf.test</span>(<span class="at">alternative =</span> <span class="st">&#39;stationary&#39;</span>)</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="do">##  Augmented Dickey-Fuller Test</span></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a><span class="do">## data:  .</span></span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a><span class="do">## Dickey-Fuller = -2.6198, Lag order = 2, p-value = 0.3363</span></span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a><span class="do">## alternative hypothesis: stationary</span></span></code></pre></div>
+<p>Con un p-value de 0.33 aún no podemos rechazar la hipótesis nula por lo que la serie no es estacionaria.</p>
+<p>Vamos a intentar aplicando diferencias de orden 2. Es decir, la diferencia de la serie de 1eras diferencias.</p>
+<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cbind</span>(<span class="st">&quot;Original&quot;</span>   <span class="ot">=</span> ts_train,</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>      <span class="st">&quot;1er. dif.&quot;</span>  <span class="ot">=</span> <span class="fu">diff</span>(ts_train),</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>      <span class="st">&#39;2da. dif.&#39;</span>  <span class="ot">=</span> <span class="fu">diff</span>(<span class="fu">diff</span>(ts_train))) <span class="sc">%&gt;%</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autoplot</span>(<span class="at">facets =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>           <span class="at">color  =</span> <span class="st">&#39;steelblue&#39;</span>) <span class="sc">+</span></span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">&#39;Ventas&#39;</span>,</span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">x     =</span> <span class="st">&#39;Meses&#39;</span>)</span></code></pre></div>
+<p><img src="index.es_files/figure-html/unnamed-chunk-41-1.png" width="80%" style="display: block; margin: auto;" /></p>
+<div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>ts_train <span class="sc">%&gt;%</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">diff</span>(<span class="at">difference =</span> <span class="dv">2</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">adf.test</span>(<span class="at">alternative =</span> <span class="st">&#39;stationary&#39;</span>)</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a><span class="do">##  Augmented Dickey-Fuller Test</span></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a><span class="do">## data:  .</span></span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a><span class="do">## Dickey-Fuller = -4.0105, Lag order = 2, p-value = 0.02289</span></span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a><span class="do">## alternative hypothesis: stationary</span></span></code></pre></div>
+<p>Con un p-value de 0.022 (&lt; 0.05), el test determina que se rechaza la hipótesis nula a favor de la alternativa: la serie ya es estacionaria.</p>
+<p>Al haber realizado dos diferencias el parámetro <span class="math inline">\(d\)</span> del modelo ARIMA toma el valor 2.</p>
+<div id="autocorrelación-y-autocorrelación-parcial" class="section level3" number="7.5.1">
+<h3><span class="header-section-number">7.5.1</span> Autocorrelación y Autocorrelación Parcial</h3>
+<p>El próximo paso es realizar los gráficos de autocorrelación (ACF) y autocorrelación parcial (PACF) de la serie estacionaria para poder determinar los coeficientes <span class="math inline">\(p\)</span> y <span class="math inline">\(q\)</span> del modelo.</p>
+<p>Hemos dicho anteriormente que el gráfico ACF mide la relación lineal entre una valor <span class="math inline">\(y_{t}\)</span> e <span class="math inline">\(y_{t-k}\)</span> para diferentes valores de <span class="math inline">\(k\)</span>. Así, si <span class="math inline">\(y_{t}\)</span> e <span class="math inline">\(y_{t-1}\)</span> están correlacionados entonces <span class="math inline">\(y_{t-1}\)</span> e <span class="math inline">\(y_{t-2}\)</span> también deben estarlo, y como consecuencia hay correlación entre <span class="math inline">\(y_{t}\)</span> e <span class="math inline">\(y_{t-2}\)</span> porque ambos están conectados con <span class="math inline">\(y_{t-1}\)</span>. Al usar el PACF se salta este problema ya que este mide la relación entre <span class="math inline">\(y_{t}\)</span> e <span class="math inline">\(y_{t-k}\)</span> después de remover los efectos de los retardos <span class="math inline">\(1, 2, 3, ..., k-1\)</span>.</p>
+<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>ts_train <span class="sc">%&gt;%</span> </span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">diff</span>(<span class="at">differences =</span> <span class="dv">2</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtsdisplay</span>(<span class="at">lag =</span> <span class="dv">30</span>)</span></code></pre></div>
+<p><img src="index.es_files/figure-html/unnamed-chunk-43-1.png" width="80%" style="display: block; margin: auto;" /></p>
+<p>Como regla general si los coeficientes de ACF tienden exponencialmente a cero el modelo adecuado será un ARIMA(p,d,0). Luego, el número <span class="math inline">\(p\)</span> del modelo son los coeficientes significativamente distintos de cero del gráfico PACF. Como tenemos un solo pico significativo en PACF tenemos <span class="math inline">\(p = 1\)</span>, resultando un modelo ARIMA(1,2,0).</p>
+</div>
+<div id="ajuste-de-modelos-1" class="section level3" number="7.5.2">
+<h3><span class="header-section-number">7.5.2</span> Ajuste de Modelos</h3>
+<div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Modelo ARIMA(1,2,0)</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>arima120.train <span class="ot">&lt;-</span> <span class="fu">Arima</span>(ts_train,</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>                     <span class="at">order  =</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">0</span>),</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>                     <span class="at">lambda =</span> <span class="dv">0</span>)</span></code></pre></div>
+<p>La función <em>auto.arima()</em> del paquete forecast nos permite encontrar la mejor combinación de parámetros para un modelo ARIMA, incluso podemos verificar si nuestros modelos propuestos son correctos o si deberíamos considerar otros.</p>
+<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">auto.arima</span>(ts_train,</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>           <span class="at">seasonal      =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>           <span class="at">stepwise      =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>           <span class="at">approximation =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a><span class="do">## Series: ts_train </span></span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a><span class="do">## ARIMA(1,1,0) </span></span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a><span class="do">## Coefficients:</span></span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a><span class="do">##           ar1</span></span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a><span class="do">##       -0.4150</span></span>
+<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a><span class="do">## s.e.   0.1954</span></span>
+<span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb33-13"><a href="#cb33-13" aria-hidden="true" tabindex="-1"></a><span class="do">## sigma^2 estimated as 511455320:  log likelihood=-262.83</span></span>
+<span id="cb33-14"><a href="#cb33-14" aria-hidden="true" tabindex="-1"></a><span class="do">## AIC=529.65   AICc=530.25   BIC=531.92</span></span></code></pre></div>
+<p>La función nos sugiere que el mejor modelo será un ARIMA(1,1,0), es decir con <span class="math inline">\(d=1\)</span> lo que significa que solo necesita una diferencia de primer orden para que la serie sea estacionaria, esto es contradictorio para nosotros ya que hemos necesitado dos diferencias utilizando el test de Dickey-Fuller. De todas maneras vamos a incorporarlo como modelo de análisis.</p>
+<div class="sourceCode" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Modelo ARIMA(1,1,0)</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>arima110.train <span class="ot">&lt;-</span> <span class="fu">Arima</span>(ts_train,</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>                     <span class="at">order  =</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>),</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>                     <span class="at">lambda =</span> <span class="dv">0</span>)</span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>arima110.train</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a><span class="do">## Series: ts_train </span></span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a><span class="do">## ARIMA(1,1,0) </span></span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a><span class="do">## Box Cox transformation: lambda= 0 </span></span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a><span class="do">## Coefficients:</span></span>
+<span id="cb34-11"><a href="#cb34-11" aria-hidden="true" tabindex="-1"></a><span class="do">##          ar1</span></span>
+<span id="cb34-12"><a href="#cb34-12" aria-hidden="true" tabindex="-1"></a><span class="do">##       -0.348</span></span>
+<span id="cb34-13"><a href="#cb34-13" aria-hidden="true" tabindex="-1"></a><span class="do">## s.e.   0.208</span></span>
+<span id="cb34-14"><a href="#cb34-14" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb34-15"><a href="#cb34-15" aria-hidden="true" tabindex="-1"></a><span class="do">## sigma^2 estimated as 0.06405:  log likelihood=-0.59</span></span>
+<span id="cb34-16"><a href="#cb34-16" aria-hidden="true" tabindex="-1"></a><span class="do">## AIC=5.17   AICc=5.77   BIC=7.44</span></span></code></pre></div>
+<div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">autoplot</span>(ts_train, <span class="at">series =</span> <span class="st">&#39;Train&#39;</span>) <span class="sc">+</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(<span class="fu">fitted</span>(arima120.train), <span class="at">series =</span> <span class="st">&#39;Ajuste ARIMA(1,2,0)&#39;</span>) <span class="sc">+</span></span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(<span class="fu">fitted</span>(arima110.train), <span class="at">series =</span> <span class="st">&#39;Ajuste ARIMA(1,1,0)&#39;</span>) <span class="sc">+</span></span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">&#39;Métodos ARIMA&#39;</span>,</span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">&#39;Ajuste de Modelos (Train)&#39;</span>,</span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">&#39;Meses&#39;</span>, </span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">&#39;Unidades&#39;</span>) <span class="sc">+</span></span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">color =</span> <span class="fu">guide_legend</span>(<span class="st">&#39;Serie&#39;</span>)) <span class="sc">+</span></span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">&#39;red&#39;</span>,</span>
+<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;orange&#39;</span>,</span>
+<span id="cb35-11"><a href="#cb35-11" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;steelblue&#39;</span>))</span></code></pre></div>
+<p><img src="index.es_files/figure-html/unnamed-chunk-47-1.png" width="80%" style="display: block; margin: auto;" /></p>
+</div>
+<div id="análisis-de-los-residuos" class="section level3" number="7.5.3">
+<h3><span class="header-section-number">7.5.3</span> Análisis de los Residuos</h3>
+<p>Para la mayoría de los modelos de pronósticos, el residuo es la diferencia entre las observaciones <span class="math inline">\(y_{t}\)</span> y sus correspondientes pronósticos ajustados <span class="math inline">\(\hat{y}_{t}\)</span> resultando:</p>
+<p><span class="math display">\[e_{t} = y_{t} - \hat{y}_{t}\]</span></p>
+<p>Analizar los residuos nos permite conocer si el modelo de pronóstico ha capturado correctamente la información subyacente en los datos. Los residuos deben responder a un ruido blanco, es decir deben tener una media en cero y no estar correlacionados. Idealmente también deberían tener varianza constante y estar normalmente distribuidos aunque estos dos últimos requisitos no son estrictamente necesarios.</p>
+<p>Este análisis lo vamos a hacer gráficamente y nos apoyaremos en el test de Ljung-Box el cual nos servirá para confirmar si nuestro modelo está bien ajustado y si los errores se corresponden a un ruido blanco. Las hipótesis nula y alternativa en este test son las siguientes:</p>
+<ul>
+<li><p><span class="math inline">\(H_{0}\)</span> : Los errores se distribuyen en forma independiente (hay ruido blanco).</p></li>
+<li><p><span class="math inline">\(H_{1}\)</span> : Los errores no se distribuyen en forma independiente (No hay ruido blanco).</p></li>
+</ul>
+<p>Rechazamos <span class="math inline">\(H_{0}\)</span> si el p-value &lt; 0.05 con un 95% de confianza.</p>
+<p>La función <strong>checkresiduals()</strong> del paquete <em>forecast</em> nos permite verificar si los residuos cumplen o no las condiciones que describimos.</p>
+<div class="sourceCode" id="cb36"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">checkresiduals</span>(arima120.train)</span></code></pre></div>
+<p><img src="index.es_files/figure-html/unnamed-chunk-48-1.png" width="80%" style="display: block; margin: auto;" /></p>
+<pre><code>## 
+##  Ljung-Box test
+## 
+## data:  Residuals from ARIMA(1,2,0)
+## Q* = 4.7659, df = 4, p-value = 0.3122
+## 
+## Model df: 1.   Total lags used: 5</code></pre>
+<p>El análisis de la serie de residuos nos dice que no existe un patrón de tendencia que sugiere autocorrelación de los errores, esto también es visible en el gráfico ACF donde no vemos coeficientes significativamente distintos de cero. También vemos que los errores están centrados en cero y que se distribuyen relativamente normal. Confirmamos estos supuestos con el test de Ljung-Box que arroja un p-value &gt; 0.05 lo que significa que no se rechaza la hipótesis nula de que los errores se distribuyen de forma independiente.</p>
+<div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">checkresiduals</span>(arima110.train)</span></code></pre></div>
+<p><img src="index.es_files/figure-html/unnamed-chunk-49-1.png" width="80%" style="display: block; margin: auto;" /></p>
+<pre><code>## 
+##  Ljung-Box test
+## 
+## data:  Residuals from ARIMA(1,1,0)
+## Q* = 3.1028, df = 4, p-value = 0.5408
+## 
+## Model df: 1.   Total lags used: 5</code></pre>
+<p>Con un p-value &gt; 0.05 no podemos rechazar la hipótesis nula, por lo tanto los errores para este modelo también se distribuyen de manera independiente.</p>
+</div>
+<div id="evaluación-del-error-4" class="section level3" number="7.5.4">
+<h3><span class="header-section-number">7.5.4</span> Evaluación del Error</h3>
+<div class="sourceCode" id="cb40"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>arima120.train_fc <span class="ot">&lt;-</span> <span class="fu">forecast</span>(arima120.train, <span class="at">h =</span> <span class="dv">6</span>)</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>arima110.train_fc <span class="ot">&lt;-</span> <span class="fu">forecast</span>(arima110.train, <span class="at">h =</span> <span class="dv">6</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb41"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Gráfico de errores de pronosticos ARIMA</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a><span class="fu">autoplot</span>(ts_train, <span class="at">series =</span> <span class="st">&#39;Train&#39;</span>) <span class="sc">+</span></span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(arima120.train_fc<span class="sc">$</span>mean, <span class="at">series =</span> <span class="st">&#39;ARIMA(1,2,0)&#39;</span>) <span class="sc">+</span></span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(arima110.train_fc<span class="sc">$</span>mean, <span class="at">series =</span> <span class="st">&#39;ARIMA(1,1,0)&#39;</span>) <span class="sc">+</span></span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(ts_test, <span class="at">series =</span> <span class="st">&#39;Test&#39;</span>) <span class="sc">+</span></span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">&#39;Métodos ARIMA&#39;</span>,</span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">&#39;Pronóstico sobre el set de prueba (Test)&#39;</span>,</span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">&#39;Meses&#39;</span>, </span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">&#39;Unidades&#39;</span>) <span class="sc">+</span></span>
+<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">color =</span> <span class="fu">guide_legend</span>(<span class="st">&#39;Serie&#39;</span>)) <span class="sc">+</span></span>
+<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">&#39;red&#39;</span>,</span>
+<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;orange&#39;</span>,</span>
+<span id="cb41-13"><a href="#cb41-13" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;grey&#39;</span>,</span>
+<span id="cb41-14"><a href="#cb41-14" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;steelblue&#39;</span>))</span></code></pre></div>
+<p><img src="index.es_files/figure-html/unnamed-chunk-51-1.png" width="80%" style="display: block; margin: auto;" /></p>
+<table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="4">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Modelo ARIMA(1,2,0)
+</div>
+</th>
+</tr>
+<tr>
+<th style="text-align:center;">
+Periodo
+</th>
+<th style="text-align:center;">
+Ventas
+</th>
+<th style="text-align:center;">
+Pronóstico
+</th>
+<th style="text-align:center;">
+Error
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;">
+2008-01
+</td>
+<td style="text-align:center;">
+60108
+</td>
+<td style="text-align:center;">
+38723
+</td>
+<td style="text-align:center;">
+21385
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-02
+</td>
+<td style="text-align:center;">
+72000
+</td>
+<td style="text-align:center;">
+26350
+</td>
+<td style="text-align:center;">
+45650
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-03
+</td>
+<td style="text-align:center;">
+60296
+</td>
+<td style="text-align:center;">
+20119
+</td>
+<td style="text-align:center;">
+40177
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-04
+</td>
+<td style="text-align:center;">
+67868
+</td>
+<td style="text-align:center;">
+14218
+</td>
+<td style="text-align:center;">
+53650
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-05
+</td>
+<td style="text-align:center;">
+95008
+</td>
+<td style="text-align:center;">
+10584
+</td>
+<td style="text-align:center;">
+84424
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-06
+</td>
+<td style="text-align:center;">
+43701
+</td>
+<td style="text-align:center;">
+7609
+</td>
+<td style="text-align:center;">
+36092
+</td>
+</tr>
+</tbody>
+</table>
+<table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="4">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Modelo ARIMA(1,1,0)
+</div>
+</th>
+</tr>
+<tr>
+<th style="text-align:center;">
+Periodo
+</th>
+<th style="text-align:center;">
+Ventas
+</th>
+<th style="text-align:center;">
+Pronóstico
+</th>
+<th style="text-align:center;">
+Error
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;">
+2008-01
+</td>
+<td style="text-align:center;">
+60108
+</td>
+<td style="text-align:center;">
+56432
+</td>
+<td style="text-align:center;">
+3676
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-02
+</td>
+<td style="text-align:center;">
+72000
+</td>
+<td style="text-align:center;">
+53317
+</td>
+<td style="text-align:center;">
+18683
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-03
+</td>
+<td style="text-align:center;">
+60296
+</td>
+<td style="text-align:center;">
+54381
+</td>
+<td style="text-align:center;">
+5915
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-04
+</td>
+<td style="text-align:center;">
+67868
+</td>
+<td style="text-align:center;">
+54009
+</td>
+<td style="text-align:center;">
+13859
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-05
+</td>
+<td style="text-align:center;">
+95008
+</td>
+<td style="text-align:center;">
+54138
+</td>
+<td style="text-align:center;">
+40870
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+2008-06
+</td>
+<td style="text-align:center;">
+43701
+</td>
+<td style="text-align:center;">
+54093
+</td>
+<td style="text-align:center;">
+-10392
+</td>
+</tr>
+</tbody>
+</table>
+<table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="3">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Error de pronósticos sobre el grupo test
+</div>
+</th>
+</tr>
+<tr>
+<th style="text-align:center;">
+MÉTODO
+</th>
+<th style="text-align:center;">
+MAE
+</th>
+<th style="text-align:center;">
+MAPE
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;width: 3cm; ">
+ARIMA(1,2,0)
+</td>
+<td style="text-align:center;width: 3cm; ">
+46896
+</td>
+<td style="text-align:center;width: 3cm; ">
+69.4
+</td>
+</tr>
+<tr>
+<td style="text-align:center;width: 3cm; ">
+ARIMA(1,1,0)
+</td>
+<td style="text-align:center;width: 3cm; ">
+15566
+</td>
+<td style="text-align:center;width: 3cm; ">
+21.5
+</td>
+</tr>
+</tbody>
+</table>
+<p> </p>
+</div>
+</div>
+<div id="pronósticos-de-periodos-futuros" class="section level2" number="7.6">
+<h2><span class="header-section-number">7.6</span> Pronósticos de Periodos Futuros</h2>
+<p>Según la metodología de <em>Simulación de Modelos</em>, luego de ajustar diferentes métodos sobre nuestro grupo <em>Train</em> y evaluar pronósticos sobre el grupo <em>Test</em> debemos considerar como mejor modelo aquél que obtenga el menor error según la métrica adoptada y utilizarlo para el pronóstico de periodos futuros.</p>
+<p>El resumen de los errores MAE y MAPE que arrojó cada modelo es el siguiente:</p>
+<table class=" lightable-paper lightable-hover" style="font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="3">
+<div style="TRUE">
+Error de Pronósticos
+</div>
+</th>
+</tr>
+<tr>
+<th style="text-align:left;">
+MÉTODO
+</th>
+<th style="text-align:left;">
+MAE
+</th>
+<th style="text-align:left;">
+MAPE
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;width: 5cm; ">
+HWM
+</td>
+<td style="text-align:left;width: 5cm; font-weight: bold;color: black !important;">
+<span style="display: inline-block; direction: rtl; unicode-bidi: plaintext; border-radius: 4px; padding-right: 2px; background-color: #ff8978; width: 20.46%">9593</span>
+</td>
+<td style="text-align:left;width: 5cm; font-weight: bold;color: black !important;">
+<span style="display: inline-block; direction: rtl; unicode-bidi: plaintext; border-radius: 4px; padding-right: 2px; background-color: #ff8978; width: 23.05%">16.0</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:left;width: 5cm; ">
+SES
+</td>
+<td style="text-align:left;width: 5cm; font-weight: bold;color: black !important;">
+<span style="display: inline-block; direction: rtl; unicode-bidi: plaintext; border-radius: 4px; padding-right: 2px; background-color: #ff8978; width: 31.55%">14795</span>
+</td>
+<td style="text-align:left;width: 5cm; font-weight: bold;color: black !important;">
+<span style="display: inline-block; direction: rtl; unicode-bidi: plaintext; border-radius: 4px; padding-right: 2px; background-color: #ff8978; width: 29.83%">20.7</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:left;width: 5cm; ">
+ARIMA(1,1,0)
+</td>
+<td style="text-align:left;width: 5cm; font-weight: bold;color: black !important;">
+<span style="display: inline-block; direction: rtl; unicode-bidi: plaintext; border-radius: 4px; padding-right: 2px; background-color: #ff8978; width: 33.19%">15566</span>
+</td>
+<td style="text-align:left;width: 5cm; font-weight: bold;color: black !important;">
+<span style="display: inline-block; direction: rtl; unicode-bidi: plaintext; border-radius: 4px; padding-right: 2px; background-color: #ff8978; width: 30.98%">21.5</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:left;width: 5cm; ">
+Holt
+</td>
+<td style="text-align:left;width: 5cm; font-weight: bold;color: black !important;">
+<span style="display: inline-block; direction: rtl; unicode-bidi: plaintext; border-radius: 4px; padding-right: 2px; background-color: #ff8978; width: 35.50%">16646</span>
+</td>
+<td style="text-align:left;width: 5cm; font-weight: bold;color: black !important;">
+<span style="display: inline-block; direction: rtl; unicode-bidi: plaintext; border-radius: 4px; padding-right: 2px; background-color: #ff8978; width: 31.70%">22.0</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:left;width: 5cm; ">
+Naïve
+</td>
+<td style="text-align:left;width: 5cm; font-weight: bold;color: black !important;">
+<span style="display: inline-block; direction: rtl; unicode-bidi: plaintext; border-radius: 4px; padding-right: 2px; background-color: #ff8978; width: 42.59%">19972</span>
+</td>
+<td style="text-align:left;width: 5cm; font-weight: bold;color: black !important;">
+<span style="display: inline-block; direction: rtl; unicode-bidi: plaintext; border-radius: 4px; padding-right: 2px; background-color: #ff8978; width: 39.05%">27.1</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:left;width: 5cm; ">
+SNaïve
+</td>
+<td style="text-align:left;width: 5cm; font-weight: bold;color: black !important;">
+<span style="display: inline-block; direction: rtl; unicode-bidi: plaintext; border-radius: 4px; padding-right: 2px; background-color: #ff8978; width: 42.41%">19890</span>
+</td>
+<td style="text-align:left;width: 5cm; font-weight: bold;color: black !important;">
+<span style="display: inline-block; direction: rtl; unicode-bidi: plaintext; border-radius: 4px; padding-right: 2px; background-color: #ff8978; width: 51.30%">35.6</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:left;width: 5cm; ">
+HWA
+</td>
+<td style="text-align:left;width: 5cm; font-weight: bold;color: black !important;">
+<span style="display: inline-block; direction: rtl; unicode-bidi: plaintext; border-radius: 4px; padding-right: 2px; background-color: #ff8978; width: 45.10%">21151</span>
+</td>
+<td style="text-align:left;width: 5cm; font-weight: bold;color: black !important;">
+<span style="display: inline-block; direction: rtl; unicode-bidi: plaintext; border-radius: 4px; padding-right: 2px; background-color: #ff8978; width: 52.74%">36.6</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:left;width: 5cm; ">
+Drift
+</td>
+<td style="text-align:left;width: 5cm; font-weight: bold;color: black !important;">
+<span style="display: inline-block; direction: rtl; unicode-bidi: plaintext; border-radius: 4px; padding-right: 2px; background-color: #ff8978; width: 64.39%">30195</span>
+</td>
+<td style="text-align:left;width: 5cm; font-weight: bold;color: black !important;">
+<span style="display: inline-block; direction: rtl; unicode-bidi: plaintext; border-radius: 4px; padding-right: 2px; background-color: #ff8978; width: 61.82%">42.9</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:left;width: 5cm; ">
+Promedio
+</td>
+<td style="text-align:left;width: 5cm; font-weight: bold;color: black !important;">
+<span style="display: inline-block; direction: rtl; unicode-bidi: plaintext; border-radius: 4px; padding-right: 2px; background-color: #ff8978; width: 66.79%">31323</span>
+</td>
+<td style="text-align:left;width: 5cm; font-weight: bold;color: black !important;">
+<span style="display: inline-block; direction: rtl; unicode-bidi: plaintext; border-radius: 4px; padding-right: 2px; background-color: #ff8978; width: 79.68%">55.3</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:left;width: 5cm; ">
+ARIMA(1,2,0)
+</td>
+<td style="text-align:left;width: 5cm; font-weight: bold;color: black !important;">
+<span style="display: inline-block; direction: rtl; unicode-bidi: plaintext; border-radius: 4px; padding-right: 2px; background-color: #ff8978; width: 100.00%">46896</span>
+</td>
+<td style="text-align:left;width: 5cm; font-weight: bold;color: black !important;">
+<span style="display: inline-block; direction: rtl; unicode-bidi: plaintext; border-radius: 4px; padding-right: 2px; background-color: #ff8978; width: 100.00%">69.4</span>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Siendo el modelo de Holt-Winters Multiplicativo el que obtuvo los mejores resultados, vamos a realizar el pronóstico de periodos futuros pero utilizando ambos grupos como datos de entradas (<em>Train</em> y <em>Test</em>).</p>
+<p>El número obtenido para cada periodo consistirá en una estimación probabilística de un valor futuro, que será una media y dos intervalos de confianza, uno al 80% y otro al 95%.</p>
+<div class="sourceCode" id="cb42"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Ajuste y Pronóstico HW - Multiplicativo</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>winM_pred <span class="ot">&lt;-</span> <span class="fu">hw</span>(ts_ventas,</span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>                <span class="at">seasonal =</span> <span class="st">&#39;multiplicative&#39;</span>,</span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>                <span class="at">h =</span> <span class="dv">6</span>)</span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>winM_pred[[<span class="st">&#39;model&#39;</span>]]  </span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a><span class="do">## Holt-Winters&#39; multiplicative method </span></span>
+<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a><span class="do">## Call:</span></span>
+<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a><span class="do">##  hw(y = ts_ventas, h = 6, seasonal = &quot;multiplicative&quot;) </span></span>
+<span id="cb42-11"><a href="#cb42-11" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb42-12"><a href="#cb42-12" aria-hidden="true" tabindex="-1"></a><span class="do">##   Smoothing parameters:</span></span>
+<span id="cb42-13"><a href="#cb42-13" aria-hidden="true" tabindex="-1"></a><span class="do">##     alpha = 0.2341 </span></span>
+<span id="cb42-14"><a href="#cb42-14" aria-hidden="true" tabindex="-1"></a><span class="do">##     beta  = 1e-04 </span></span>
+<span id="cb42-15"><a href="#cb42-15" aria-hidden="true" tabindex="-1"></a><span class="do">##     gamma = 1e-04 </span></span>
+<span id="cb42-16"><a href="#cb42-16" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb42-17"><a href="#cb42-17" aria-hidden="true" tabindex="-1"></a><span class="do">##   Initial states:</span></span>
+<span id="cb42-18"><a href="#cb42-18" aria-hidden="true" tabindex="-1"></a><span class="do">##     l = 133700.773 </span></span>
+<span id="cb42-19"><a href="#cb42-19" aria-hidden="true" tabindex="-1"></a><span class="do">##     b = -2809.4672 </span></span>
+<span id="cb42-20"><a href="#cb42-20" aria-hidden="true" tabindex="-1"></a><span class="do">##     s = 0.6596 0.969 0.7678 0.8709 0.9422 1.4004</span></span>
+<span id="cb42-21"><a href="#cb42-21" aria-hidden="true" tabindex="-1"></a><span class="do">##            1.0793 1.3124 1.0259 1.0694 1.0652 0.8379</span></span>
+<span id="cb42-22"><a href="#cb42-22" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb42-23"><a href="#cb42-23" aria-hidden="true" tabindex="-1"></a><span class="do">##   sigma:  0.2546</span></span>
+<span id="cb42-24"><a href="#cb42-24" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb42-25"><a href="#cb42-25" aria-hidden="true" tabindex="-1"></a><span class="do">##      AIC     AICc      BIC </span></span>
+<span id="cb42-26"><a href="#cb42-26" aria-hidden="true" tabindex="-1"></a><span class="do">## 712.6229 763.6229 736.4433</span></span>
+<span id="cb42-27"><a href="#cb42-27" aria-hidden="true" tabindex="-1"></a><span class="fu">autoplot</span>(ts_ventas, <span class="at">series =</span> <span class="st">&#39;Real&#39;</span>) <span class="sc">+</span></span>
+<span id="cb42-28"><a href="#cb42-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(winM_pred, <span class="at">series =</span> <span class="st">&#39;Pronóstico&#39;</span>) <span class="sc">+</span></span>
+<span id="cb42-29"><a href="#cb42-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">&#39;Método de Holt-Winters Multiplicativo&#39;</span>,</span>
+<span id="cb42-30"><a href="#cb42-30" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">&#39;Pronóstico a 6 meses&#39;</span>,</span>
+<span id="cb42-31"><a href="#cb42-31" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">&#39;Meses&#39;</span>, </span>
+<span id="cb42-32"><a href="#cb42-32" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">&#39;Unidades&#39;</span>) <span class="sc">+</span></span>
+<span id="cb42-33"><a href="#cb42-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">color =</span> <span class="fu">guide_legend</span>(<span class="st">&#39;Serie&#39;</span>)) <span class="sc">+</span></span>
+<span id="cb42-34"><a href="#cb42-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">&#39;orange&#39;</span>,</span>
+<span id="cb42-35"><a href="#cb42-35" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;steelblue&#39;</span>))</span></code></pre></div>
+<p><img src="index.es_files/figure-html/unnamed-chunk-57-1.png" width="80%" style="display: block; margin: auto;" /></p>
+<p>El modelo utiliza un <span class="math inline">\(beta = 0,0001\)</span> lo que significa que no suaviza la pendiente sino que la replica a los pronósticos de los periodos futuros.</p>
+<table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="6">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Pronóstico 2do. Semestre 2008
+</div>
+</th>
+</tr>
+<tr>
+<th style="text-align:center;">
+Periodo
+</th>
+<th style="text-align:center;">
+Point.Forecast
+</th>
+<th style="text-align:center;">
+Lo.80
+</th>
+<th style="text-align:center;">
+Hi.80
+</th>
+<th style="text-align:center;">
+Lo.95
+</th>
+<th style="text-align:center;">
+Hi.95
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #bab8b5 !important;">
+Jul 2008
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #c47104 !important;">
+72571
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #e68402 !important;">
+48890
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #e68402 !important;">
+96253
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #edaf5c !important;">
+36354
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #edaf5c !important;">
+108789
+</td>
+</tr>
+<tr>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #bab8b5 !important;">
+Aug 2008
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #c47104 !important;">
+46185
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #e68402 !important;">
+30630
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #e68402 !important;">
+61740
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #edaf5c !important;">
+22396
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #edaf5c !important;">
+69974
+</td>
+</tr>
+<tr>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #bab8b5 !important;">
+Sep 2008
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #c47104 !important;">
+40243
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #e68402 !important;">
+26226
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #e68402 !important;">
+54261
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #edaf5c !important;">
+18805
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #edaf5c !important;">
+61682
+</td>
+</tr>
+<tr>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #bab8b5 !important;">
+Oct 2008
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #c47104 !important;">
+33324
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #e68402 !important;">
+21289
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #e68402 !important;">
+45359
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #edaf5c !important;">
+14918
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #edaf5c !important;">
+51730
+</td>
+</tr>
+<tr>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #bab8b5 !important;">
+Nov 2008
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #c47104 !important;">
+39338
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #e68402 !important;">
+24562
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #e68402 !important;">
+54114
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #edaf5c !important;">
+16740
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #edaf5c !important;">
+61936
+</td>
+</tr>
+<tr>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #bab8b5 !important;">
+Dec 2008
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #c47104 !important;">
+24924
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #e68402 !important;">
+15150
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #e68402 !important;">
+34697
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #edaf5c !important;">
+9976
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #edaf5c !important;">
+39871
+</td>
+</tr>
+</tbody>
+</table>
+<p> </p>
+<p>Una técnica interesante dentro de la simulación de modelos es la de utilizar multimodelos de pronósticos, es decir, se eligen los dos o tres mejores y se toma como pronóstico final el promedio de los pronósticos de cada uno de ellos. Siguiendo esta línea, vamos a realizar pronósticos con nuestro segundo mejor modelo (SES) y luego promediarlos con el obtenido por el Holt-Winters Multiplicativo.</p>
+<p> </p>
+<div class="sourceCode" id="cb43"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Ajuste y Pronóstico SES</span></span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>ses_pred <span class="ot">&lt;-</span> <span class="fu">ses</span>(ts_ventas, <span class="at">h =</span> <span class="dv">6</span>, <span class="at">lambda =</span> <span class="dv">0</span>)</span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>ses_pred[[<span class="st">&#39;model&#39;</span>]]  </span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a><span class="do">## Simple exponential smoothing </span></span>
+<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a><span class="do">## Call:</span></span>
+<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a><span class="do">##  ses(y = ts_ventas, h = 6, lambda = 0) </span></span>
+<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb43-10"><a href="#cb43-10" aria-hidden="true" tabindex="-1"></a><span class="do">##   Box-Cox transformation: lambda= 0 </span></span>
+<span id="cb43-11"><a href="#cb43-11" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb43-12"><a href="#cb43-12" aria-hidden="true" tabindex="-1"></a><span class="do">##   Smoothing parameters:</span></span>
+<span id="cb43-13"><a href="#cb43-13" aria-hidden="true" tabindex="-1"></a><span class="do">##     alpha = 0.5349 </span></span>
+<span id="cb43-14"><a href="#cb43-14" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb43-15"><a href="#cb43-15" aria-hidden="true" tabindex="-1"></a><span class="do">##   Initial states:</span></span>
+<span id="cb43-16"><a href="#cb43-16" aria-hidden="true" tabindex="-1"></a><span class="do">##     l = 11.8036 </span></span>
+<span id="cb43-17"><a href="#cb43-17" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb43-18"><a href="#cb43-18" aria-hidden="true" tabindex="-1"></a><span class="do">##   sigma:  0.269</span></span>
+<span id="cb43-19"><a href="#cb43-19" aria-hidden="true" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb43-20"><a href="#cb43-20" aria-hidden="true" tabindex="-1"></a><span class="do">##      AIC     AICc      BIC </span></span>
+<span id="cb43-21"><a href="#cb43-21" aria-hidden="true" tabindex="-1"></a><span class="do">## 27.19243 28.11551 31.39602</span></span>
+<span id="cb43-22"><a href="#cb43-22" aria-hidden="true" tabindex="-1"></a><span class="fu">autoplot</span>(ts_ventas, <span class="at">series =</span> <span class="st">&#39;Real&#39;</span>) <span class="sc">+</span></span>
+<span id="cb43-23"><a href="#cb43-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autolayer</span>(ses_pred, <span class="at">series =</span> <span class="st">&#39;Pronóstico&#39;</span>) <span class="sc">+</span></span>
+<span id="cb43-24"><a href="#cb43-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">&#39;Método de Holt-Winters Multiplicativo&#39;</span>,</span>
+<span id="cb43-25"><a href="#cb43-25" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">&#39;Pronóstico a 6 meses&#39;</span>,</span>
+<span id="cb43-26"><a href="#cb43-26" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">&#39;Meses&#39;</span>, </span>
+<span id="cb43-27"><a href="#cb43-27" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">&#39;Unidades&#39;</span>) <span class="sc">+</span></span>
+<span id="cb43-28"><a href="#cb43-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">color =</span> <span class="fu">guide_legend</span>(<span class="st">&#39;Serie&#39;</span>)) <span class="sc">+</span></span>
+<span id="cb43-29"><a href="#cb43-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">&#39;orange&#39;</span>,</span>
+<span id="cb43-30"><a href="#cb43-30" aria-hidden="true" tabindex="-1"></a>                                <span class="st">&#39;steelblue&#39;</span>))</span></code></pre></div>
+<p><img src="index.es_files/figure-html/unnamed-chunk-59-1.png" width="80%" style="display: block; margin: auto;" /></p>
+<p> </p>
+<table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="6">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Pronóstico 2do. Semestre 2008
+</div>
+</th>
+</tr>
+<tr>
+<th style="text-align:center;">
+Periodo
+</th>
+<th style="text-align:center;">
+Point.Forecast
+</th>
+<th style="text-align:center;">
+Lo.80
+</th>
+<th style="text-align:center;">
+Hi.80
+</th>
+<th style="text-align:center;">
+Lo.95
+</th>
+<th style="text-align:center;">
+Hi.95
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #bab8b5 !important;">
+Jul 2008
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #c47104 !important;">
+57872
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #e68402 !important;">
+40995
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #e68402 !important;">
+81697
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #edaf5c !important;">
+34156
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #edaf5c !important;">
+98056
+</td>
+</tr>
+<tr>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #bab8b5 !important;">
+Aug 2008
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #c47104 !important;">
+57872
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #e68402 !important;">
+39143
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #e68402 !important;">
+85562
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #edaf5c !important;">
+31824
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #edaf5c !important;">
+105239
+</td>
+</tr>
+<tr>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #bab8b5 !important;">
+Sep 2008
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #c47104 !important;">
+57872
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #e68402 !important;">
+37559
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #e68402 !important;">
+89171
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #edaf5c !important;">
+29876
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #edaf5c !important;">
+112102
+</td>
+</tr>
+<tr>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #bab8b5 !important;">
+Oct 2008
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #c47104 !important;">
+57872
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #e68402 !important;">
+36170
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #e68402 !important;">
+92596
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #edaf5c !important;">
+28203
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #edaf5c !important;">
+118754
+</td>
+</tr>
+<tr>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #bab8b5 !important;">
+Nov 2008
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #c47104 !important;">
+57872
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #e68402 !important;">
+34930
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #e68402 !important;">
+95883
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #edaf5c !important;">
+26737
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #edaf5c !important;">
+125262
+</td>
+</tr>
+<tr>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #bab8b5 !important;">
+Dec 2008
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #c47104 !important;">
+57872
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #e68402 !important;">
+33808
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #e68402 !important;">
+99063
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #edaf5c !important;">
+25436
+</td>
+<td style="text-align:center;font-weight: bold;color: white !important;background-color: #edaf5c !important;">
+131671
+</td>
+</tr>
+</tbody>
+</table>
+<p> </p>
+<p>La tabla de pronósticos finales para el segundo semestre del año 2008 es la siguiente:</p>
+ 
+<table class=" lightable-paper lightable-hover" style="font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="4">
+<div style="TRUE">
+Pronóstico Multimodelo 2do. Semestre 2008
+</div>
+</th>
+</tr>
+<tr>
+<th style="text-align:center;">
+Periodo
+</th>
+<th style="text-align:center;">
+Pronóstico HWM
+</th>
+<th style="text-align:center;">
+Pronóstico SES
+</th>
+<th style="text-align:center;">
+Pronóstico Promedio
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;font-weight: bold;color: black !important;">
+Jul 2008
+</td>
+<td style="text-align:center;">
+72571
+</td>
+<td style="text-align:center;">
+57872
+</td>
+<td style="text-align:center;font-weight: bold;color: black !important;">
+65222
+</td>
+</tr>
+<tr>
+<td style="text-align:center;font-weight: bold;color: black !important;">
+Aug 2008
+</td>
+<td style="text-align:center;">
+46185
+</td>
+<td style="text-align:center;">
+57872
+</td>
+<td style="text-align:center;font-weight: bold;color: black !important;">
+52028
+</td>
+</tr>
+<tr>
+<td style="text-align:center;font-weight: bold;color: black !important;">
+Sep 2008
+</td>
+<td style="text-align:center;">
+40243
+</td>
+<td style="text-align:center;">
+57872
+</td>
+<td style="text-align:center;font-weight: bold;color: black !important;">
+49058
+</td>
+</tr>
+<tr>
+<td style="text-align:center;font-weight: bold;color: black !important;">
+Oct 2008
+</td>
+<td style="text-align:center;">
+33324
+</td>
+<td style="text-align:center;">
+57872
+</td>
+<td style="text-align:center;font-weight: bold;color: black !important;">
+45598
+</td>
+</tr>
+<tr>
+<td style="text-align:center;font-weight: bold;color: black !important;">
+Nov 2008
+</td>
+<td style="text-align:center;">
+39338
+</td>
+<td style="text-align:center;">
+57872
+</td>
+<td style="text-align:center;font-weight: bold;color: black !important;">
+48605
+</td>
+</tr>
+<tr>
+<td style="text-align:center;font-weight: bold;color: black !important;">
+Dec 2008
+</td>
+<td style="text-align:center;">
+24924
+</td>
+<td style="text-align:center;">
+57872
+</td>
+<td style="text-align:center;font-weight: bold;color: black !important;">
+41398
+</td>
+</tr>
+</tbody>
+</table>
+<p> </p>
+</div>
+</div>
+<div id="conclusiones" class="section level1" number="8">
+<h1><span class="header-section-number">8</span> Conclusiones</h1>
+<p>Uno de mis profesores durante mis años de universidad decía que los pronósticos siempre van a estar equivocados, que quizás había algunos modelos que podían resultar útiles pero que al final por más ajuste que se haga no van a predecir el futuro es forma correcta. Decía que la clave para tener un buen método de pronóstico se basa principalmente en la comparación entre ellos y quedarse con el que nos de un menor error. A esto es lo que apuntaba este proyecto, a tratar de entender que la importancia de realizar pronósticos, más allá de los los errores que puedan tener y de que no salgan como lo planeamos, es que nos ayudan a conocer mejor tanto el contexto como a nuestro propio negocio, a ver nuestras limitaciones y a hacernos preguntas para tratar de estar preparados a diferentes escenarios.</p>
+<p>Pudimos ver con este ejercicio como un modelo, que tiene un error de 16% (probablemente inaceptable en muchos contextos) puede superar ampliamente los métodos simples como el de promedios o el naïve y que son preferibles a no realizar pronóstico alguno porque nos pueden ser de gran utilidad a la hora de reducir los riesgos en la toma de decisiones para el planeamiento de producción, de despachos, de requerimiento de materiales, personal y capacidad solo por nombrar algunas áreas que se ven beneficiadas por información de este tipo.</p>
+<p> </p>
+</div>
+<div id="bibliografía" class="section level1" number="9">
+<h1><span class="header-section-number">9</span> Bibliografía</h1>
+<ul>
+<li>Hyndman, R.J., &amp; Athanasopoulos, G. (2018) Forecasting: principles and practice, 2nd edition, OTexts: Melbourne, Australia. OTexts.com/fpp2.
+</div></li>
+</ul>
+</div>

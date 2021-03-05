@@ -40,8 +40,10 @@ Durante el proceso de extrusión de piezas, el componente que está sujeto a las
 Entonces, si cada pieza fabricada con una misma matriz es más pesada que su predecesora, es lógico pensar que no hay dos unidades del mismo artículo que pesen los mismo (bajo la misma matriz) y no podríamos utilizar un peso teórico o de catálogo para, conocido el stock en unidades, obtener el peso total del stock. Así es, a medida que los lotes de producción se van fabricando el peso promedio de las piezas va variando. Determinar que tan importante es esta variación, como se distribuye, se combina y se relaciona con las distintas matrices y artículos es clave para resolver el problema.
 
 &nbsp;
-![(*Matrices de extrusión*)](/img/teoria-y-realidad/matrices.jpg){width=50%}
+![](/img/teoria-y-realidad/matrices.jpg){width=50%}
+<center>*Matrices de extrusión*</center>
 &nbsp;
+
 
 # 2. Descripción del Dataset
 

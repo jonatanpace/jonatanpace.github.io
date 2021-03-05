@@ -1,0 +1,537 @@
+---
+title: Tensiones entre teoría y realidad
+author: Jonatan Pace
+date: '2020-09-30'
+slug: tensiones-entre-teoria-y-realidad
+categories: ['R', 'Estadística']
+tags: ['R', 'Estadística']
+type: ''
+Description: 'Dos días al año las actividades del sector de almacenamiento y procesamiento de materiales son distintas a lo habitual. En estos días todo el personal está abocado a hacer un relevamiento completo del stock. Lo que importa es conocer con la mayor precisión posible cuántas toneladas de material hay en el almacén y para lograr esto se deben parar muchos procesos productivos por un tiempo considerable. ¿Es el procedimiento habitual el correcto o hay mejores alternativas?'
+subtitle: 'Utilizando la inferencia estadística para refutar un supuesto establecido.'
+image: 'img/portada_perfiles.jpg'
+codefolding_nobutton: false
+codefolding_show: 'show'
+disable_codefolding: false
+output: 
+  blogdown::html_page:
+    toc: true
+    highlight: 'pygments'
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, collapse = TRUE)
+```
+
+  <div style="text-align: justify"> 
+# 1. Presentación del Problema
+
+
+No conocer o no tener el stock actualizado desencadena una marea de problemas dentro de una organización: excesos por sobrestock que implican disminución del espacio disponible y aumento del capital inmovilizado, faltantes que generan incumplimiento de plazos de entrega, pérdidas y deterioro del material, excesiva cantidad de tiempo para buscar un ítem en particular y diferencias contables en el balance económico ya son suficientes problemas como para que no se justifique conocer el stock en detalle.
+
+Lo cierto es que disponer de un inventario que sea exacto no es algo alcanzable para organizaciones que manejan una gran variedad de productos. Las variantes en los pedidos combinado con la diversidad de clientes con necesidades distintas hacen que obtener niveles de confiabilidad en el stock no sea tarea sencilla. Pero si un condimento le faltaba al negocio en el que nos encontramos es la complejidad misma que lo rodea en donde diferentes departamentos de la organización reclaman su propio sistema de medida, aquí la producción se programa en unidades, se fabrica en metros y se factura en kilos.
+
+Esta guerra de magnitudes llega a su pico de máxima tensión en dos momentos al año que son cuando se debe hacer el balance contable, aquí es imprescindible conocer el inventario en kilogramos. La cuestión es que esto implica detener todos los procesos, pesar cada ítem y reanudar las operaciones, una actividad que supone unas 12 horas. Es una tarea compleja porque se trata de manipular un promedio de 16000 unidades de entre 5 y 6 metros de largo que se presenta en unas 500 variedades diferentes.
+
+Pero, ¿No basta con contar cada producto y multiplicarlo por su peso teórico o de catálogo para no tener que pesarlos?. Parece una buena idea pero es aquí donde nos encontramos con el *quid* de la cuestión.
+
+Durante el proceso de extrusión de piezas, el componente que está sujeto a las condiciones térmicas y mecánicas más severas es sin duda, la matriz. Estas altas temperaturas se derivan no sólo del tocho caliente (lingote), sino también del calor generado por la deformación y la fricción en las zonas de contacto con el material. A esto hay que añadir la capa de óxido que se forma instantáneamente en la superficie del metal extruido, causando una abrasión y desgaste de la matriz durante el servicio. Sucede que a mayor desgaste de las paredes internas de la matriz mayor será el volumen de material extruido por unidad de tiempo, es decir, la pieza resultante tendrá paredes más gruesas o diámetros más grandes y, como consecuencia, un peso mayor. Esto no sucede instantáneamente, sino que ocurre a lo largo de toda la vida útil de la matriz. Si bien, las matrices son sometidas a un proceso de endurecimiento superficial en forma periódica, esto sirve solo para retrasar su desgaste.
+
+Entonces, si cada pieza fabricada con una misma matriz es más pesada que su predecesora, es lógico pensar que no hay dos unidades del mismo artículo que pesen los mismo (bajo la misma matriz) y no podríamos utilizar un peso teórico o de catálogo para, conocido el stock en unidades, obtener el peso total del stock. Así es, a medida que los lotes de producción se van fabricando el peso promedio de las piezas va variando. Determinar que tan importante es esta variación, como se distribuye, se combina y se relaciona con las distintas matrices y artículos es clave para resolver el problema.
+
+&nbsp;
+![(*Matrices de extrusión*)](/img/teoria-y-realidad/matrices.jpg){width=50%}
+&nbsp;
+
+# 2. Descripción del Dataset
+
+Cada fila representa un registro que corresponde a los datos de producción de un artículo en particular y las columnas son atributos de este registro los cuales se detallan a continuación:
+
+- `periodo`: hace referencia a la semana en la que se registró la observación.
+- `n_obs`: corresponde al orden de los registros.
+- `id_pieza`: es el código identificador del artículo.
+- `id_matriz`: es el código identificador de la matriz.
+- `pieza_real`: peso real en Kg. del artículo. Se obtiene promediando el peso del lote fabricado entre todas las unidades del lote.
+- `pieza_teo`: peso teórico en Kg. del artículo, es el que figura en el catálogo de venta.
+- `piezas`: unidades fabricadas.
+- `lote_real`: peso real en Kg. correspondiente al lote completo fabricado.
+- `lote_teo`: peso teórico en Kg. del lote producido.
+
+  A fines prácticos trabajaremos con un dataset de tamaño reducido en el que se presentan 20 artículos que representan el 40% de la producción total. El dataset original cuenta con 457 artículos, de todas maneras el análisis que realizaremos es generalizable a la totalidad de los datos.
+
+&nbsp;
+
+## 2.1. Carga de Librerías y Dataset
+
+```{r message=FALSE}
+# Carga de librerías
+library(tidyverse)
+library(kableExtra)
+library(ggpubr)
+library(boot)
+
+# Carga del dataset
+prod <- read_csv("prod_20.csv")
+
+# Primeros registros del dataset
+prod %>% head
+```
+
+
+```{r}
+prod %>% glimpse()
+```
+
+&nbsp;
+
+## 2.2. Resumen Estadístico
+
+```{r}
+prod %>% summary()
+```
+
+&nbsp;
+
+## 2.3. Análisis Gráfico
+
+  La variación del peso promedio de las piezas dependiendo del estado de la matriz utilizada es uno de los inconvenientes principales a la hora de resolver este problema, aquí se puede observar gráficamente como se comporta esta variación la cual se muestra para el artículo a17.
+
+```{r}
+prod %>% filter(id_pieza == 'a17') %>% 
+  ggplot()+
+  geom_boxplot(aes(x = reorder(id_matriz, pieza_real),
+                   y = pieza_real, color = id_matriz), 
+               show.legend = FALSE)+
+  geom_hline(yintercept = 2.13, color = '#69b3a2') +
+  theme_minimal()+
+  labs(x = 'matriz', y = 'peso (Kg)') +
+  ggtitle('Variación en el peso para el artículo a17')
+  
+```
+
+  Es interesante observar como el peso promedio de las piezas del lote producido se va alejando del valor de catálogo, demarcado con una línea verde, a medida que se van acercando al final de su vida útil. Sería muy interesante acompañar este gráfico con otro en el que podamos ver las toneladas fabricadas desde la puesta en servicio de la matriz pero lamentablemente no contamos con esa información en nuestro dataset. Lo que si sabemos es que las matrices van desde m01 (más antiguas) a m08 (más nuevas). Este comportamiento se repite una y otra vez a lo largo de todos los artículos.
+
+  Ahora bien, para cada artículo tenemos diferentes matrices que coinciden en el periodo de servicio. Esto es así porque cuando una matriz, por ejemplo m01, debe ser retirada para su correspondiente mantenimiento y se debe continuar con la producción del mismo artículo, se pone en m02 en servicio, si ocurre que esta ocasiona un problema de calidad se prepara m03. Y es así que podemos encontrar que en un mismo periodo (semana) se fabrica un artículo particular utilizando diferentes matrices.
+
+  Observamos que en el periodo 6 se realizaron 3 lotes de producción de la pieza a02 utilizando las matrices m03, m04 y m06. La diferencia en el peso real de las piezas es debido al diferente desgaste que presentan las matrices.
+
+```{r}
+prod %>% filter(periodo == 6 & id_pieza == 'a02')
+```
+
+  Esta mezcla de matrices en el proceso se observa graficando la evolución del peso promedio del lote fabricado a lo largo de todos los periodos.
+
+```{r warning=FALSE}
+#Referencia de pesos teóricos
+hlines <- prod %>% 
+  filter(id_pieza %in% c('a01', 'a03', 'a04', 'a14')) %>% 
+  select(id_pieza, pieza_teo) %>% unique
+
+prod %>% 
+  filter(id_pieza %in% c('a01', 'a03', 'a04', 'a14')) %>%
+  ggplot(aes(x = n_obs, y = pieza_real, color = id_pieza))+
+  geom_line(show.legend = FALSE)+
+  geom_hline(data = hlines, aes(yintercept = pieza_teo), 
+             color = '#69b3a2') +
+  theme_minimal()+
+  facet_wrap(vars(id_pieza), scales = 'free') +
+  labs(title = 'Evolución del peso promedio del lote',
+       x     = 'Observación',
+       y     = 'peso (Kg)')
+  
+```
+
+  Podemos ver diferentes comportamientos en la evolución del peso promedio de las piezas. Para el caso de a01 vemos un movimiento bastante errático, pareciera que en los lotes más recientes el promedio real se acerca al teórico y posiblemente es debido a la incorporación de nuevas matrices y el pase a retiro de las más desgastadas. Esto último es mucho más evidente en a03 y a14. En a04 vemos un comportamiento inverso, es decir las matrices se están desgastando generando piezas cada vez más pesadas respecto al valor de catálogo.
+ 
+  A este punto debemos tener en cuenta una consideración, que los pesos teóricos de las piezas están correctamente calculados según la especificación en el diseño de los mismos. Dicho esto, nos preguntamos:
+  
+  ¿Son los pesos promedios reales sistemáticamente mayores que los pesos teórico? ¿Los lotes con promedio alto se compensarán con lotes de promedio bajo producidos por nuevas matrices? Dada la posibilidad de compensación de las diferencias, ¿Serán las toneladas reales totales diferentes de las teóricas al final de x periodos?
+
+  Para poder responder estas preguntas debemos explorar más a fondo los datos. 
+
+  Veamos gráficamente como son las producciones semanales a los largo de todos los periodos.
+
+```{r message=FALSE, warning=FALSE}
+#Producción total y acumulada por periodo
+prod_acum <- prod %>%
+  group_by(periodo) %>% 
+  summarise(tot_r = round(sum(lote_real)/1000, 2),
+            tot_t = round(sum(lote_teo)/1000, 2))
+
+#Producción media periódica
+prod_m <- mean(prod_acum$tot_r)
+
+prod_acum %>%   
+  ggplot() +
+  geom_bar(aes(x = periodo,
+               y = tot_r),
+           fill  = '#9db320', 
+           color = '#c8de49',
+           stat  = 'identity',
+           alpha = .6) +
+  geom_line(aes(x = periodo,
+                y = prod_m)) + 
+  labs(title = 'Producción Semanal',
+       y     = 'Peso lote (Tn)',
+       x     = 'Periodo (semana)') +
+  theme_minimal() +
+  annotate('text',
+           x     = 50,
+           y     = 16.2,
+           label = 'Promedio semanal = 15.4 tn')
+```
+
+```{r, echo = FALSE, results='hide'}
+#Producción semanal promedio en Toneladas
+prod_m
+```
+  Supongamos que empezamos a producir al comienzo de la semana 1 y al finalizar la semana 65 queremos saber si existe diferencia entre las toneladas acumuladas reales y las que calculamos en forma teórica, para calcular esto vamos a necesitar dos nuevos atributos: `tot_r` que es la suma total por periodo de los kilos reales para todos los artículos; y `tot_t` que corresponde a la suma total teórica para los mismos periodos. Vamos a observar que ocurre a medida que van transcurriendo las semanas.
+
+```{r message=FALSE, warning=FALSE, error=FALSE}
+prod_acum <- prod %>%
+  group_by(periodo) %>% 
+  summarise(tot_r = round(sum(lote_real)/1000, 2),
+            tot_t = round(sum(lote_teo)/1000, 2)) %>% 
+  mutate(dif_acum = cumsum(tot_r - tot_t),
+                     dif = tot_r - tot_t)
+
+acum <- prod_acum %>% 
+  ggplot(aes(x = periodo,
+             y = dif_acum)) +
+  geom_area(fill  = '#edb61f',
+            alpha = 0.4) +
+  geom_line(color = "#b89128",
+            size  = 1) +
+  theme_minimal() +
+  theme(axis.title.x = element_blank(),
+        axis.text.x  = element_blank()) +
+  geom_point(aes(x     = 65,
+                 y     = 17.01,
+                 color ='red'),
+             show.legend = FALSE) +
+  expand_limits(y = c(0, 20)) +
+  annotate("text",
+           x     = 60,
+           y     = 19,
+           label = "17.01 tn")+
+  labs(title = 'Evolución de diferencias',
+       y     = 'Diferencia acumu. (Tn)') 
+
+
+barras <- ggplot(prod_acum,
+              aes(x = periodo,
+                  y = dif*100)) +
+  geom_segment(aes(x    = periodo,
+                   xend = periodo,
+                   y    = 0,
+                   yend = dif),
+               size  = 1.3,
+               alpha = 0.5,
+               color  = 'red') +
+  theme_minimal() +
+  labs(x = 'Periodo (semana)',
+       y = 'Diferencia (%)')
+
+ggarrange(ncol = 1, 
+          nrow = 2,
+          acum,
+          barras,
+          align = 'v',
+          heights = c(1.5, 1))
+```
+
+  Se puede observar que las diferencias son crecientes hasta el periodo 40 y es a partir de aquí que estas se estabilizan y se compensan. Al finalizar los 65 periodos nos encontramos con que la producción real fue 17.01 toneladas por encima de la calculada en forma teórica. En cambio, si hacemos este mismo cálculo entre los periodos 40 a 65 obtendremos 0.88 toneladas por sobre el teórico, observando que los pesos de los lotes se han ido compensando.
+  Observemos el mismo gráfico pero solo centrándonos entre los periodos 40 y 65.
+
+```{r}
+prod_new <- prod_acum %>% 
+  filter(periodo > 39) %>%  
+  mutate(dif_acum = round(cumsum(tot_r - tot_t),2),
+                     dif = tot_r - tot_t)
+
+acum <- prod_new %>% 
+  ggplot(aes(x = periodo,
+             y = dif_acum)) +
+  geom_area(fill  = '#c9d126',
+            alpha = 0.4) +
+  geom_line(color = '#69b3a2',
+            size  = 1) +
+  theme_minimal() +
+  theme(axis.title.x = element_blank(),
+        axis.text.x  = element_blank()) +
+  geom_point(aes(x     = 65,
+                 y     = 0.88,
+                 color ='red'),
+             show.legend = FALSE) +
+  expand_limits(y = c(0, 1.5)) +
+  annotate("text", x = 63, y = 1, label = "0.88 tn")+
+  labs(title = 'Evolución de diferencias',
+       y     = 'Diferencia acumulada (Tn)')
+
+barras <- ggplot(prod_new,
+              aes(x = periodo,
+                  y = dif*100)) +
+  geom_segment(aes(x    = periodo,
+                   xend = periodo,
+                   y    = 0,
+                   yend = dif),
+               size  = 1.3,
+               alpha = 0.5,
+               color  = 'red') +
+  theme_minimal() +
+  labs(x = 'Periodo (semana)',
+       y = 'Diferencia (%)')
+
+ggarrange(ncol = 1, 
+          nrow = 2,
+          acum,
+          barras,
+          align = 'v',
+          heights = c(1.5, 1))
+```
+
+Tenemos dos comportamientos completamente diferentes, es evidente que se han introducido importantes cambios a partir de la semana 40, posiblemente se deba a la incorporación de nuevas matrices y una mayor rotación de las mismas, una mejora en los procesos relativos al mantenimiento, capacitación del personal y ajuste de sensores y balanzas. Esto nos hace pensar que dentro de la gran variedad de productos fabricados combinados con la variedad de matrices utilizadas podríamos obtener cierta compensación que nos permita finalmente considerar usar los pesos teóricos para el cálculo del stock. 
+
+&nbsp;
+
+# 3. Variable de decisión
+
+  Para continuar con el estudio vamos a crear una nueva variable que permita cuantificar la variación entre el peso real y el peso teórico.
+
+  Definiremos un coeficiente que sea independiente de la magnitud de las producciones periódicas y que sea capaz de medir qué tanto se alejaron los pesos reales de los teóricos. Para esto podemos usar el cociente entre la producción real en el periodo y la producción teórica del periodo, será nuestro coeficiente de referencia y lo llamaremos `coef_ref`.
+
+
+```{r}
+prod_acum <- prod_acum %>% 
+  mutate(coef_ref = tot_r/tot_t)
+
+prod_acum %>% 
+  select(periodo,
+         tot_t,
+         tot_r,
+         coef_ref) %>% 
+  head() %>% 
+  kbl(align = 'c') %>% 
+  kable_styling(bootstrap_options = 'striped',
+                full_width        = F,
+                position          = 'center')
+```
+
+  Entonces, podemos interpretar a la nueva variable `coef_ref` para el periodo 2 diciendo que las toneladas reales estuvieron un 3.19% por encima de las calculadas en forma teórica.
+
+&nbsp;
+
+## 3.1. Análisis Exploratorio
+
+  A continuación realizaremos un histograma y un gráfico de densidad de `coef_ref` para los 65 periodos.
+
+```{r, warning=FALSE, message=FALSE}
+prod_acum %>% 
+  ggplot(aes(x = coef_ref)) +
+  geom_histogram(aes(y   = ..density..,
+                     fill = ..count..), 
+                 binwidth = 0.01) +
+  scale_fill_gradient(low  = "#DCDCDC",
+                      high = "#7C7C7C") +
+  stat_function(fun    = dnorm,
+                colour = "firebrick",
+                args   = list(mean = mean(prod_acum$coef_ref),
+                              sd   = sd(prod_acum$coef_ref))) +
+  ggtitle("Histograma y curva normal teórica") +
+  theme_minimal() +
+  geom_vline(aes(xintercept = mean(prod_acum$coef_ref)),
+             colour = 'black', size = 1, linetype = 2
+             ) +
+   annotate('text',
+            x     = 1.026,
+            y     = -2,
+            label = 'Media = 1.016')
+```
+
+  Para la muestra de 65 observaciones resulta una media de 1.016.
+
+```{r, echo=FALSE, results='hide'}
+#Media muestral para los 65 periodos
+mean(prod_acum$coef_ref)
+```
+
+
+  Si calculamos esta media a partir del periodo 40 (donde se observan variaciones más estables) resulta 1.003.
+
+```{r}
+#Media muestral entre el periodo 40 y el 65.
+mean(prod_acum$coef_ref[40:65])
+```
+
+  Para nuestro caso nos interesa el comportamiento del promedio de esta variable, ya que lo que buscamos es una compensación de todas las observaciones entorno a una media igual 1, esto indicaría que periodos con producciones con pesos sobre el teórico se equilibran con pesos por debajo del mismo.
+
+&nbsp;
+
+## 3.2. Distribución de la variable
+
+  La media de `coef_ref` será nuestro estadístico puntal, pero es cierto que este valor cambiaría si pudiéramos tomar una nueva muestra. Para conocer qué tan preciso es necesitamos pensar como este podría cambiar si (en nuestra imaginación) podríamos repetir el proceso de muestreo muchas veces, es decir, que tenemos la posibilidad de volver a tomar otros 65 valores del coeficiente y calcular nuevamente su media infinitas veces. ¿Cuánto podría variar el valor medio? Bueno, si pudiéramos conocer cuánto varía nuestro estimador esto nos ayudaría a decir qué tan preciso es. Esto se podría saber si conociéramos los parámetros y la distribución de la población de la cual se tomó la muestra y es lo que justamente no conocemos.
+
+  Hay dos caminos para resolver esta cuestión. La primera sería usar el método tradicional que se encuentra en los libros de estadística, sería la de plantear hipótesis acerca de la forma de la distribución poblacional usando teorías de probabilidad que nos permitan obtener cuál es la variabilidad esperada en nuestra media muestral observando que tanto se aleja de la media poblacional, deberíamos analizar la independencia de las observaciones de la muestra, realizar una prueba de normalidad y calcular el intervalo de confianza.
+  Sin embargo hay un enfoque alternativo que asume que la forma de la distribución poblacional es aproximadamente igual a la forma de la distribución muestral. Pero como no podemos seguir tomando muestras de la población vamos a tomar en forma repetida nuevas muestras de nuestra *muestra* con reemplazamiento. Este proceso es conocido como **boostrapping** y es el camino que vamos a seguir.
+
+&nbsp;
+
+## 3.3. Boostrapping
+
+  El boostrapping nos provee un método intuitivo que tiene la habilidad de aprender cuál es la variabilidad de un estimador, la media en nuestro caso, sin conocer ni hacer ninguna hipótesis matemática acerca de los parámetros de la población.
+
+El proceso será el siguiente:
+
+- Simularemos que tomamos 30 muestras del mismo tamaño que la muestra original (65). Sería como poner los 65 valores de nuestro coeficiente en una bolsa y, con reemplazamiento, sacar 65 valores.
+
+- Calcular la media para cada una de las 30 muestras
+
+- Graficar las medias.
+
+- Repetimos el proceso para 100, 500 y 5000 muestras.
+  
+  Veamos gráficamente este concepto para los 65 periodos donde la media resultó ser 1.016.
+
+```{r, warning = FALSE, message = FALSE}
+#Función para obtener la media de cada muestra
+media <- function(valores, i) {
+    mean(valores[i])
+}
+
+tag <- c('boot30', 'boot100', 'boot500', 'boot5000')
+bt <- c(30, 100, 500, 5000)
+boostrap <- data.frame(boot = rep(tag, bt))
+boostrap$boot <- factor(boostrap$boot, levels = tag)
+
+set.seed(15)
+j <- 1
+for (i in bt) {
+    boots <- boot(prod_acum$coef_ref, media, R = i)
+    assign(paste0('boots_', j), boots)
+    j <- j + 1
+}
+
+medias <- c(boots_1$t, boots_2$t, boots_3$t, boots_4$t)
+boostrap <- cbind(boostrap, value = medias)
+
+
+ggplot(boostrap, aes(x = value)) +
+  geom_histogram(fill = "#8bb046", color = "#c5ed79") +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank()) +
+  facet_wrap(~boot, scales = 'free') +
+  labs(x = 'media_coef_ref') +
+  ggtitle("Histograma para diferente número de muestras")
+```
+
+  Podemos observar como la variabilidad de la media del estadístico decrece a medida que aumenta la cantidad de veces que simulamos obtener una muestra. También resulta evidente como la distribución del boostrapping para 5000 muestras es simétrica alrededor de la media de la muestra original (1.016). Este comportamiento que se observa es conocido como *Teorema Central del Límite* el cual nos dice que la distribución de las medias muestrales tienden a una distribución normal cuando se aumenta el tamaño de la muestra sin importar la forma de la distribución de los datos originales.
+
+&nbsp;
+
+## 3.4. Intervalos de Confianza
+
+  Esta distribución de boostrapping nos permitirá cuantificar la incertidumbre de nuestro estimador, por ejemplo, podemos calcular el rango de valores que contienen el 95% de las medias para cada boostrap.
+Un intervalo de confianza del 95% debe abarcar desde el percentil 0.025 al 0.975.
+
+&nbsp;
+
+```{r, echo=FALSE}
+Nro <- c(30,100,500,5000)
+inf <- c(1.0113,1.0120,1.0121,1.0126)
+sup <- c(1.0198,1.0203,1.0198,1.0200)
+Amplitud <- c(0.0085,0.0082,0.0076,0.0073)
+
+data.frame('Boostrap' = Nro,
+           'Límite Inf' = inf,
+           'Límite Sup' = sup,
+           'Amplitud' = Amplitud) %>% 
+  kbl(align = 'c') %>% 
+  kable_styling('hover',
+                full_width        = F,
+                position          = "center")
+```
+
+&nbsp;
+
+```{r}
+#Intervalos de confianza para 30 boots
+quantile(boots_1$t, probs = c(.025, .975), type = 6)
+#Intervalos de confianza para 100 boots
+quantile(boots_2$t, probs = c(.025, .975), type = 6)
+#Intervalos de confianza para 500 boots
+quantile(boots_3$t, probs = c(.025, .975), type = 6)
+#Intervalos de confianza para 5000 boots
+quantile(boots_4$t, probs = c(.025, .975), type = 6)
+```
+
+```{r, include = FALSE}
+quantile(boots_1$t, probs = c(.025, .975), type = 6)[[2]] - quantile(boots_1$t, probs = c(.025, .975), type = 6)[[1]]
+
+quantile(boots_2$t, probs = c(.025, .975), type = 6)[[2]]-
+quantile(boots_2$t, probs = c(.025, .975), type = 6)[[1]]
+
+quantile(boots_3$t, probs = c(.025, .975), type = 6)[[2]]-
+quantile(boots_3$t, probs = c(.025, .975), type = 6)[[1]]
+
+quantile(boots_4$t, probs = c(.025, .975), type = 6)[[2]]-
+quantile(boots_4$t, probs = c(.025, .975), type = 6)[[1]]
+
+```
+
+&nbsp;
+  Ahora calcularemos los intervalos de confianza pero solo teniendo en cuenta desde el periodo 40 al 65, aquellos donde se observó una menor diferencia acumulada ya que existía mayor compensación de los pesos reales con los teóricos.
+&nbsp;
+
+```{r}
+#Bootstrap de 5000 muestras para el periodo 40 al 65.
+boot_new <- boot(prod_acum$coef_ref[40:65], media, R = 5000)
+quantile(boot_new$t, probs = c(.025, .975), type = 6)
+```
+
+```{r, warning = FALSE, message = FALSE}
+boot_new_df <- as.data.frame(boot_new$t)
+ggplot(boot_new_df, aes(x = V1)) +
+  geom_histogram(fill = "#8bb046", color = "#c5ed79") +
+  theme_minimal() +
+  labs(x = 'media_coef_ref') +
+  ggtitle("Histograma periodo 40-65, 5000 muestras")
+```
+
+&nbsp;
+
+# 4. Conclusiones
+
+  En resumen, hemos utilizado la técnica de bootstrapping para inferir intervalos de confianza de la media del `coef_ref`. La siguiente tabla simplifica los resultados obtenidos.
+
+&nbsp;
+
+```{r, echo=FALSE}
+periodo <- c('1 a 65', '40 a 65')
+media <- c(1.0163,1.0030)
+inf <- c(1.0126,0.9986)
+sup <- c(1.0200,1.0069)
+
+data.frame('Periodo' = periodo,
+           'Media Coef_ref' = media,
+           'Límite Inf' = inf,
+           'Límite Sup' = sup) %>% 
+  kbl(align = 'c') %>% 
+  kable_styling('hover',
+                full_width        = F,
+                position          = "center")
+```
+
+&nbsp;
+
+Es interesante observar como la estabilidad a partir de la semana 40 se refleja en los intervalos de confianza. Debido a que el valor que intentamos obtener para la media de `coef_ref` es 1, lo que implica que no hay diferencias entre el peso calculado en forma real y en forma teórica. Podemos concluir que si las condiciones a partir de la semana 40 se mantiene sí es posible utilizar los pesos teóricos para el cálculo de stock. La cuestión cambia si miramos los 65 periodos, donde se observa que el promedio de los pesos reales podrían ubicarse hasta un 2% por encima de lo teórico. Si contemplamos unas 15 toneladas por periodo, luego de 25 periodos podríamos encontrar diferencias entre 4.7 y 7.5 toneladas, lo que se traduce directamente en pérdida del material ya que se estarían vendiendo piezas más pesadas de lo que realmente deberían ser, cuyos costos fueron calculados teniendo en cuenta un peso teórico que es menor al real. 
+
+&nbsp;
+
+# 5. Bibliografía
+
+- Didáctica de la Estadística, Batanaro (2001).
+- Estadística Aplicada a la Administración y a la Economía, D. Hildebrand (1998).
+- cienciadedatos.net
+- The Art of Statistics, David John Spiegelhalter (2019). 
+  </div>

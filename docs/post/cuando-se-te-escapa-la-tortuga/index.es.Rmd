@@ -1,0 +1,1648 @@
+---
+title: Cuando se te escapa la tortuga
+author: Jonatan Pace
+date: '2020-08-14'
+slug: cuando-se-te-escapa-la-tortuga
+categories: ['Python', 'Machine Learning', 'Regresión Logística']
+tags: ['Python', 'Machine Learning', 'Regresión Logística']
+type: ''
+subtitle: 'Prediciendo qué clientes tienen más probabilidad de prescindir de nuestros servicios.'
+image: 'img/portada_churn.png'
+Description: 'Uno de nuestros clientes que durante 12 años ha pagado cada uno de los servicios prestados a término recibe un llamado en el cual se le notifica que ha sido beneficiado por su antigüedad en la compañía y que en una fecha específica un operario pasará por su casa a cambiarle su viejo router WiFi por uno nuevo a pesar de que este sigue funcionando correctamente. Un mes después de la fecha acordada el operario aún no ha pasado y el cliente recibe un cargo extra por no haber entregado el viejo router que estaba en consignación y, a pesar de los reclamos, no consigue que este sea anulado. Cuando finalmente contactamos al cliente para resolver el conflicto este ya se ha pasado la competencia. ¿Qué ha fallado y por qué estamos siempre un paso por detrás?'
+codefolding_nobutton: false
+codefolding_show: 'show'
+disable_codefolding: false
+output: 
+  blogdown::html_page:
+    toc: true
+    highlight: 'pygments'
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, collapse = TRUE)
+```
+
+
+  <div style="text-align: justify"> 
+  
+# 1. Presentación del Problema
+Situaciones como la presentada en la introducción conviven en el día a día de cualquier empresa pero lo cierto es que los clientes se pierden por diversos motivos,  algunos se mueren, otros se mudan de ciudad, se van a la competencia porque tienen precios más bajos o porque tienen un amigo allí, pero la realidad nos muestra que la mayor pérdida es debido a una mala acción de los vendedores, telefonistas, gerentes, repartidores, operarios y quienes estén en contacto directo con el cliente y es porque se olvidan que mantenerlo contento siempre costará menos que conseguir uno nuevo.
+
+Esta actividad está orientada a generar un modelo que pueda predecir qué clientes tienen más probabilidad de darse de baja de los servicios que presta la empresa y así poder actuar en consecuencia generando diferentes estrategias de marketing para reducir la tasa de cancelación enfocándose en clientes específicos. 
+El dataset con el que vamos a trabajar se encuentra disponible en Kaggle, es el *Telco Customer Churn Dataset* el cual es de uso público.
+
+&nbsp;
+
+# 2. Librerías y Configuraciones
+
+
+```python
+# Manipulación de Datos
+# =====================
+import numpy  as np
+import pandas as pd
+
+# Gráficos
+# ========
+import seaborn           as sns
+import matplotlib.pyplot as plt
+plt.style.context('bmh')
+sns.set_context('notebook')
+
+# Preprocesado y modelado
+# =======================
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing   import LabelEncoder
+from sklearn.compose         import ColumnTransformer
+from sklearn.preprocessing   import OneHotEncoder
+from sklearn.preprocessing   import StandardScaler
+from sklearn.linear_model    import LogisticRegression
+from sklearn.metrics         import plot_confusion_matrix
+from sklearn.model_selection import RepeatedStratifiedKFold
+from sklearn.model_selection import GridSearchCV
+from sklearn.calibration     import CalibratedClassifierCV
+
+# Configuración de warnings
+# =========================
+import warnings
+warnings.filterwarnings('ignore')
+```
+
+&nbsp;
+
+# 3. Descripción del Dataset
+
+Este dataset contiene registros de clientes de la empresa Telco la cual presta servicios de telefonía, internet, tv por cable, servicios de streaming y demás. 
+Cada fila representa un cliente, y las columnas representan diferentes atributos de los mismos los cuales se detallan a continuación:
+
+- `customerID`: código identificador del cliente.
+- `gender`: sexo del cliente.
+- `SeniorCitizen`: corresponde *0* si el cliente es mayor a 65 años y *1* si no lo es.
+- `Partner`: corresponde a *Yes* si el cliente tiene pareja y *No* si no tiene.
+- `Dependents`: personas a cargo que tiene el cliente: *Yes* si tiene y *No* si no tiene.
+- `tenure`: hace referencia a la antigüedad del contrato en meses.
+- `PhoneService`: corresponde a si el cliente tiene o no contratado el servicio de telefonía: 'Yes' si lo tiene y *No* si no lo tiene.
+- `MultipleLines`: corresponde a si el cliente tiene o no contratado múltiples servicios de telefonía: *Yes* si tiene múltiple líneas, *No* si tiene solo una y *No phone services* si no tiene ninguna.
+- `InternetService`: tipo de servicio de internet contratado, puede ser: *DSL*, *fibra óptica* o *No* si no no tiene ninguno.
+- `OnlineSecurity`, `OnlineBackup`, `DeviceProtection`, `TechSuport`, `StreamingTV` y `StreamingMovies` hacen referencia a si el cliente tiene o no contratado estos tipos de servicios, para todos ellos es *Yes* si lo tiene y *No* si no lo tiene. 
+- `PaperlessBilling`: corresponde a *Yes* si el cliente tiene recibo electrónico y a *No* para el caso de recibo en papel.
+- `PaymentMethod`: método de pago de los servicios, pueden ser *Bank transfer (automatic)* (débito automático), *Credit Card*, *Mailed Check* o *Electronic Check*.
+- `MonthlyCharges`: es el monto mensual que el cliente paga por los servicios contratados.
+- `TotalCharges`: es el moto total pagado por el cliente a la compañía.
+- `Churn`: clientes que han dejado la empresa en el último mes: *Yes* si el cliente se ha ido y *No* en caso contrario.
+
+&nbsp;
+
+### 3.1 Carga del Dataset
+
+
+```python
+# Cargamos el dataset
+customers = pd.read_csv('Telco_Churn.csv')
+customers.head(5)
+```
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<div style="overflow-x:auto;">
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="overflow-x:auto;">
+      <th></th>
+      <th>customerID</th>
+      <th>gender</th>
+      <th>SeniorCitizen</th>
+      <th>Partner</th>
+      <th>Dependents</th>
+      <th>tenure</th>
+      <th>PhoneService</th>
+      <th>MultipleLines</th>
+      <th>InternetService</th>
+      <th>OnlineSecurity</th>
+      <th>...</th>
+      <th>DeviceProtection</th>
+      <th>TechSupport</th>
+      <th>StreamingTV</th>
+      <th>StreamingMovies</th>
+      <th>Contract</th>
+      <th>PaperlessBilling</th>
+      <th>PaymentMethod</th>
+      <th>MonthlyCharges</th>
+      <th>TotalCharges</th>
+      <th>Churn</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>7590-VHVEG</td>
+      <td>Female</td>
+      <td>0</td>
+      <td>Yes</td>
+      <td>No</td>
+      <td>1</td>
+      <td>No</td>
+      <td>No phone service</td>
+      <td>DSL</td>
+      <td>No</td>
+      <td>...</td>
+      <td>No</td>
+      <td>No</td>
+      <td>No</td>
+      <td>No</td>
+      <td>Month-to-month</td>
+      <td>Yes</td>
+      <td>Electronic check</td>
+      <td>29.85</td>
+      <td>29.85</td>
+      <td>No</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>5575-GNVDE</td>
+      <td>Male</td>
+      <td>0</td>
+      <td>No</td>
+      <td>No</td>
+      <td>34</td>
+      <td>Yes</td>
+      <td>No</td>
+      <td>DSL</td>
+      <td>Yes</td>
+      <td>...</td>
+      <td>Yes</td>
+      <td>No</td>
+      <td>No</td>
+      <td>No</td>
+      <td>One year</td>
+      <td>No</td>
+      <td>Mailed check</td>
+      <td>56.95</td>
+      <td>1889.5</td>
+      <td>No</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>3668-QPYBK</td>
+      <td>Male</td>
+      <td>0</td>
+      <td>No</td>
+      <td>No</td>
+      <td>2</td>
+      <td>Yes</td>
+      <td>No</td>
+      <td>DSL</td>
+      <td>Yes</td>
+      <td>...</td>
+      <td>No</td>
+      <td>No</td>
+      <td>No</td>
+      <td>No</td>
+      <td>Month-to-month</td>
+      <td>Yes</td>
+      <td>Mailed check</td>
+      <td>53.85</td>
+      <td>108.15</td>
+      <td>Yes</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>7795-CFOCW</td>
+      <td>Male</td>
+      <td>0</td>
+      <td>No</td>
+      <td>No</td>
+      <td>45</td>
+      <td>No</td>
+      <td>No phone service</td>
+      <td>DSL</td>
+      <td>Yes</td>
+      <td>...</td>
+      <td>Yes</td>
+      <td>Yes</td>
+      <td>No</td>
+      <td>No</td>
+      <td>One year</td>
+      <td>No</td>
+      <td>Bank transfer (automatic)</td>
+      <td>42.30</td>
+      <td>1840.75</td>
+      <td>No</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>9237-HQITU</td>
+      <td>Female</td>
+      <td>0</td>
+      <td>No</td>
+      <td>No</td>
+      <td>2</td>
+      <td>Yes</td>
+      <td>No</td>
+      <td>Fiber optic</td>
+      <td>No</td>
+      <td>...</td>
+      <td>No</td>
+      <td>No</td>
+      <td>No</td>
+      <td>No</td>
+      <td>Month-to-month</td>
+      <td>Yes</td>
+      <td>Electronic check</td>
+      <td>70.70</td>
+      <td>151.65</td>
+      <td>Yes</td>
+    </tr>
+  </tbody>
+</table>
+<p>5 rows × 21 columns</p>
+</div>
+    
+&nbsp;
+
+## 3.2. Resumen Estadístico
+
+
+```python
+# Descripción general del dataset
+customers.info()
+
+
+    <class 'pandas.core.frame.DataFrame'>
+    RangeIndex: 7043 entries, 0 to 7042
+    Data columns (total 21 columns):
+     #   Column            Non-Null Count  Dtype  
+    ---  ------            --------------  -----  
+     0   customerID        7043 non-null   object 
+     1   gender            7043 non-null   object 
+     2   SeniorCitizen     7043 non-null   int64  
+     3   Partner           7043 non-null   object 
+     4   Dependents        7043 non-null   object 
+     5   tenure            7043 non-null   int64  
+     6   PhoneService      7043 non-null   object 
+     7   MultipleLines     7043 non-null   object 
+     8   InternetService   7043 non-null   object 
+     9   OnlineSecurity    7043 non-null   object 
+     10  OnlineBackup      7043 non-null   object 
+     11  DeviceProtection  7043 non-null   object 
+     12  TechSupport       7043 non-null   object 
+     13  StreamingTV       7043 non-null   object 
+     14  StreamingMovies   7043 non-null   object 
+     15  Contract          7043 non-null   object 
+     16  PaperlessBilling  7043 non-null   object 
+     17  PaymentMethod     7043 non-null   object 
+     18  MonthlyCharges    7043 non-null   float64
+     19  TotalCharges      7043 non-null   object 
+     20  Churn             7043 non-null   object 
+    dtypes: float64(1), int64(2), object(18)
+    memory usage: 1.1+ MB
+```
+
+```python
+# Valores únicos para cada atributo
+for col in customers.columns:
+    print(col)
+    print(customers[col].unique())
+    print('----------')
+    print()
+
+    customerID
+    ['7590-VHVEG' '5575-GNVDE' '3668-QPYBK' ... '4801-JZAZL' '8361-LTMKD'
+     '3186-AJIEK']
+    ----------
+    
+    gender
+    ['Female' 'Male']
+    ----------
+    
+    SeniorCitizen
+    [0 1]
+    ----------
+    
+    Partner
+    ['Yes' 'No']
+    ----------
+    
+    Dependents
+    ['No' 'Yes']
+    ----------
+    
+    tenure
+    [ 1 34  2 45  8 22 10 28 62 13 16 58 49 25 69 52 71 21 12 30 47 72 17 27
+      5 46 11 70 63 43 15 60 18 66  9  3 31 50 64 56  7 42 35 48 29 65 38 68
+     32 55 37 36 41  6  4 33 67 23 57 61 14 20 53 40 59 24 44 19 54 51 26  0
+     39]
+    ----------
+    
+    PhoneService
+    ['No' 'Yes']
+    ----------
+    
+    MultipleLines
+    ['No phone service' 'No' 'Yes']
+    ----------
+    
+    InternetService
+    ['DSL' 'Fiber optic' 'No']
+    ----------
+    
+    OnlineSecurity
+    ['No' 'Yes' 'No internet service']
+    ----------
+    
+    OnlineBackup
+    ['Yes' 'No' 'No internet service']
+    ----------
+    
+    DeviceProtection
+    ['No' 'Yes' 'No internet service']
+    ----------
+    
+    TechSupport
+    ['No' 'Yes' 'No internet service']
+    ----------
+    
+    StreamingTV
+    ['No' 'Yes' 'No internet service']
+    ----------
+    
+    StreamingMovies
+    ['No' 'Yes' 'No internet service']
+    ----------
+    
+    Contract
+    ['Month-to-month' 'One year' 'Two year']
+    ----------
+    
+    PaperlessBilling
+    ['Yes' 'No']
+    ----------
+    
+    PaymentMethod
+    ['Electronic check' 'Mailed check' 'Bank transfer (automatic)'
+     'Credit card (automatic)']
+    ----------
+    
+    MonthlyCharges
+    [29.85 56.95 53.85 ... 63.1  44.2  78.7 ]
+    ----------
+    
+    TotalCharges
+    ['29.85' '1889.5' '108.15' ... '346.45' '306.6' '6844.5']
+    ----------
+    
+    Churn
+    ['No' 'Yes']
+    ----------
+
+```
+
+- Nuestro dataset contiene solo 3 atributos numéricos: `SeniorCitizen`, `tenure` y `MonthlyCharges`. 
+- Es evidente que el atributo `TotalCharges` también debería ser numérico así que vamos a proceder a cambiar el tipo de dato. 
+- La variable numérica `SeniorCitizen` toma actualmente dos valores: 0 si el cliente es menor de 65 años y 1 si es mayor. En casos como este, suele ser conveniente tratar a la variable como categórica.
+- También vamos a proceder a eliminar el atributo `customerID` ya que no es útil para ningún análisis.
+
+
+```python
+customers['TotalCharges'] = pd.to_numeric(customers['TotalCharges'], errors = 'coerce')
+customers['SeniorCitizen'] = customers.SeniorCitizen.astype('object')
+customers.drop(["customerID"], axis = 1, inplace = True)
+```
+
+
+```python
+customers.describe()
+```
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<div style="overflow-x:auto;">
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>tenure</th>
+      <th>MonthlyCharges</th>
+      <th>TotalCharges</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>count</th>
+      <td>7043.00</td>
+      <td>7043.00</td>
+      <td>7032.00</td>
+    </tr>
+    <tr>
+      <th>mean</th>
+      <td>32.37</td>
+      <td>64.76</td>
+      <td>2283.30</td>
+    </tr>
+    <tr>
+      <th>std</th>
+      <td>24.55</td>
+      <td>30.09</td>
+      <td>2266.77</td>
+    </tr>
+    <tr>
+      <th>min</th>
+      <td>0.00</td>
+      <td>18.25</td>
+      <td>18.80</td>
+    </tr>
+    <tr>
+      <th>25%</th>
+      <td>9.00</td>
+      <td>35.50</td>
+      <td>401.45</td>
+    </tr>
+    <tr>
+      <th>50%</th>
+      <td>29.00</td>
+      <td>70.35</td>
+      <td>1397.47</td>
+    </tr>
+    <tr>
+      <th>75%</th>
+      <td>55.00</td>
+      <td>89.85</td>
+      <td>3794.73</td>
+    </tr>
+    <tr>
+      <th>max</th>
+      <td>72.00</td>
+      <td>118.75</td>
+      <td>8684.80</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+ 
+&nbsp;
+
+## 3.3. Análisis Gráfico
+
+Una buena técnica para comenzar a explorar nuestro dataset es observar cómo se distribuyen las diferentes variables con respecto a nuestra variable objetivo `Churn`, aquella que queremos predecir. Esto nos ayudará a comprender si tienen relación entre ellas lo que nos permitirá tener una primera aproximación para determinar cuales serán buenas variables predictoras. 
+
+&nbsp;
+
+### 3.3.1. Variable de Respuesta
+
+*Variable Churn*
+
+
+```python
+#Distribución de la variable objetivo
+print(customers['Churn'].value_counts(normalize = True).mul(100).round(2))
+
+
+    No     73.46
+    Yes    26.54
+    Name: Churn, dtype: float64
+```    
+
+
+```python
+sns.countplot("Churn", data = customers)
+sns.despine()
+```
+
+&nbsp;
+![](/img/churn_prediction_files/output_21_1.png)
+&nbsp;
+
+&nbsp;
+
+### 3.3.2. Variables Numéricas
+
+*Variables Tenure, Monthly Charges y Total Charges*
+
+Tenemos tres variables numéricas, estas son `tenure`, `MonthlyCharges` y `TotalCharges`. Realizaremos gráficos de densidad para observar qué relación tienen con nuestra variable objetivo.
+
+
+```python
+# Función para gráficar 
+# =====================
+def kdeplot(feature): 
+    plt.figure(figsize=(9, 4))
+    plt.title("Gráfico de densidad para {}".format(feature))
+    ax0 = sns.kdeplot(customers[customers['Churn'] == 'No'][feature],
+                       color = 'navy', label= 'Churn: No', shade = True)
+    ax1 = sns.kdeplot(customers[customers['Churn'] == 'Yes'][feature],
+                       color = 'orange', label = 'Churn: Yes', shade = True)
+    plt.xlabel(feature)
+    plt.legend()
+    sns.despine()
+
+```
+
+
+```python
+kdeplot('tenure')
+```
+&nbsp;
+![](/img/churn_prediction_files/output_26_0.png)
+&nbsp;
+
+ - De la primer gráfica observamos como los clientes con contratos más cortos son los que más abandonaron la empresa.
+
+
+```python
+kdeplot('MonthlyCharges')
+```
+&nbsp;
+![](/img/churn_prediction_files/output_28_0.png)
+&nbsp;
+
+
+-  Los clientes con cargos mensuales altos fueron los que más prescindieron de los servicios de la empresa.
+
+
+```python
+kdeplot('TotalCharges')
+```
+
+&nbsp;
+![](/img/churn_prediction_files/output_30_0.png)
+&nbsp;
+
+- Observamos que los clientes con bajos costos totales son los que más abandonaron la empresa y esto es porque existe una relación entre `TotalCharges`, `MonthylyCharges` y `tenure` ya que el primero se obtiene multiplicando el monto mensual por los meses de contrato. Si bien el cálculo no resulta exacto es porque probablemente los clientes con largos contratos reciban algún tipo de descuento. Esta relación la veremos más claramente en un gráfico de correlación.
+
+&nbsp;
+
+### 3.3.3. Variables Categóricas
+
+Por otro lado, tenemos 15 variables categóricas las cuales vamos a graficar con respecto a `Churn`y 
+así observar como es su comportamiento.
+
+*Variable Senior Citizen*
+
+
+```python
+# Función para graficar porcentajes
+# =================================
+def barplot_percentages(feature, orient = 'v', axis_name = "percentage of customers"):
+    ratios = pd.DataFrame()
+    g = customers.groupby(feature)["Churn"].value_counts()
+    g = g.rename({"Churn": axis_name}, axis = 1).reset_index()
+    g[axis_name] = g[axis_name] / len(customers)
+    if orient == 'v':
+        ax = sns.barplot(x=feature, y= axis_name, hue='Churn', data=g, orient=orient)
+        ax.set_yticklabels(['{:,.0%}'.format(y) for y in ax.get_yticks()])
+    else:
+        ax = sns.barplot(x = axis_name, y = feature, hue = 'Churn', data = g, orient = orient)
+        ax.set_xticklabels(['{:,.0%}'.format(x) for x in ax.get_xticks()])
+    ax.plot()
+    sns.despine()
+```
+
+
+```python
+barplot_percentages("SeniorCitizen")
+```
+
+&nbsp;
+![](/img/churn_prediction_files/output_36_0.png)
+&nbsp;
+
+
+
+
+```python
+print(customers['SeniorCitizen'].value_counts(normalize = True).mul(100).round(2))
+
+  
+       SeniorCitizen 
+    0          83.79
+    1          16.21
+    
+```
+
+```python
+print(customers.groupby('SeniorCitizen')['Churn'].value_counts(normalize = True).mul(100).round(2))
+
+
+                         Churn
+    SeniorCitizen Churn       
+    0             No     76.39
+                  Yes    23.61
+    1             No     58.32
+                  Yes    41.68
+```   
+
+Observando este atributo podemos determinar que los clientes clasificados como `SeniorCitizen` representan el 16%, sin embargo son quienes más abandonaron la empresa, alrededor del 42% mientras que en el otro grupo representó un 24%. 
+
+*Variables Partner y Dependents*
+
+
+```python
+fig, axis = plt.subplots(1, 2, figsize=(12,4))
+axis[0].set_title("Has partner")
+axis[1].set_title("Has dependents")
+
+axis_y = "percentage of customers"
+
+# Gráfico para variable Partner
+# =============================
+gp_partner = customers.groupby('Partner')["Churn"].value_counts() / len(customers)
+gp_partner = gp_partner.rename({"Churn": axis_y}, axis = 1).reset_index()
+ax = sns.barplot(x = 'Partner', y = axis_y, hue='Churn', data = gp_partner, ax = axis[0])
+sns.despine()
+
+# Gráfico para variable Dependents
+# ================================
+gp_dep = customers.groupby('Dependents')["Churn"].value_counts() / len(customers)
+gp_dep = gp_dep.rename({"Churn": axis_y}, axis=1).reset_index()
+ax = sns.barplot(x = 'Dependents', y = axis_y, hue = 'Churn', data = gp_dep, ax = axis[1])
+```
+
+&nbsp;
+![](/img/churn_prediction_files/output_41_0.png)
+&nbsp;
+
+
+Algunas observaciones de las gráficas anteriores son:
+- Clientes solteros abandonaron la empresa en mayor proporción que clientes con pareja.
+- Clientes sin personas a cargo abandonaron la empresa en mayor proporción que aquellos que no tienen dependientes.
+
+*Variable gender*
+
+
+```python
+barplot_percentages("gender")
+```
+
+&nbsp;
+![](/img/churn_prediction_files/output_44_0.png)
+&nbsp;
+
+
+- Clientes de ambos sexos abandonan la empresa en iguales proporciones por lo que no será una buena variable predictora.
+
+*Variable Phone Services y Multiple Lines*
+
+El análisis de estas variables las podemos resumir graficando `MultipleLines` ya que aquí dentro encontramos los clientes que tienen o no servicio de telefonía. Esto implica que el atributo `PhoneServices` es redundante para el modelo.
+
+
+```python
+plt.figure(figsize = (9,4))
+barplot_percentages("MultipleLines", orient = 'h')
+```
+
+&nbsp;
+![](/img/churn_prediction_files/output_48_0.png)
+&nbsp;
+
+
+- Existe una mínima diferencia en términos de proporción a favor de más abandonos para quienes tenían múltiples servicios de telefonía.
+
+
+```python
+print(customers.groupby('MultipleLines')['Churn'].value_counts(normalize = True).mul(100).round(2))
+
+
+    MultipleLines     Churn
+    No                No       74.96
+                      Yes      25.04
+    No phone service  No       75.07
+                      Yes      24.93
+    Yes               No       71.39
+                      Yes      28.61
+    Name: Churn, dtype: float64
+```
+
+*Variables de Servicios Adicionales*
+
+
+```python
+cols = ["OnlineSecurity", "OnlineBackup", "DeviceProtection",
+        "TechSupport", "StreamingTV", "StreamingMovies"]
+
+df1 = pd.melt(customers[customers["InternetService"] != "No"][cols]).rename({'value': 'Has service'}, axis=1)
+
+plt.figure(figsize = (10, 4.5))
+
+ax = sns.countplot(data = df1, x = 'variable', hue = 'Has service', orient = 'h')
+ax.set(xlabel = 'Additional service', ylabel = 'Num of customers')
+plt.title('Número de clientes por tipo de servicio')
+sns.despine()
+plt.show()
+
+```
+&nbsp;
+![](/img/churn_prediction_files/output_52_0.png)
+&nbsp;
+
+
+```python
+plt.figure(figsize=(10, 4.5))
+df1 = customers[(customers.InternetService != "No") & (customers.Churn == "Yes")]
+df1 = pd.melt(df1[cols]).rename({'value': 'Has service'}, axis=1)
+ax = sns.countplot(data=df1, x='variable', hue='Has service', hue_order=['No', 'Yes'])
+ax.set(xlabel='Additional service', ylabel='Num of churns')
+plt.title('Número de abandonos por tipo de servicio')
+sns.despine()
+plt.show()
+```
+&nbsp;
+![](/img/churn_prediction_files/output_53_0.png)
+&nbsp;
+
+
+
+- De las gráficas anteriores podemos observar como los clientes con servicios de Streaming TV y Streaming Movies abandonaron la empresa en igual proporción, en otras palabras no se observa una relación entre clientes que se van y poseen este servicio. En cambio, sí se observa que los clientes que poseían los otros servicios son menos propensos a abandonar la empresa, probablemente sienten que sus necesidades son mejor atendidas.
+
+*Variable Payment Method*
+
+
+```python
+plt.figure(figsize = (9,4))
+plt.title('Método de pago')
+barplot_percentages("PaymentMethod", orient = 'h')
+```
+&nbsp;
+![](/img/churn_prediction_files/output_56_0.png)
+&nbsp;
+
+
+
+```python
+print(customers['PaymentMethod'].value_counts(normalize = True).mul(100).round(2))
+
+
+    Electronic check             33.58
+    Mailed check                 22.89
+    Bank transfer (automatic)    21.92
+    Credit card (automatic)      21.61
+    Name: PaymentMethod, dtype: float64
+```    
+
+- Claramente se observa una mayor proporción de abandonos para clientes que pagaban con cheque electrónico. Para el resto de los métodos de pago los abandonos se han repartido proporcionalmente.
+- El pago por cheque electrónico es también el método preferido por los clientes.
+
+*Variable Contract*
+
+
+```python
+plt.figure(figsize = (9,4))
+plt.title('Tipo de Contrato')
+barplot_percentages("Contract", orient = 'h')
+```
+
+&nbsp;
+![](/img/churn_prediction_files/output_60_0.png)
+&nbsp;
+
+
+
+```python
+print(customers['Contract'].value_counts(normalize = True).mul(100).round(2))
+
+
+    Month-to-month    55.02
+    Two year          24.07
+    One year          20.91
+    Name: Contract, dtype: float64
+```    
+
+
+```python
+print(customers.groupby('Contract')['Churn'].value_counts(normalize = True).mul(100).round(2))
+
+
+    Contract        Churn
+    Month-to-month  No       57.29
+                    Yes      42.71
+    One year        No       88.73
+                    Yes      11.27
+    Two year        No       97.17
+                    Yes       2.83
+    Name: Churn, dtype: float64
+```    
+
+- Los clientes con con contrato mensual representan el 55% de los clientes. Dentro de este grupo encontramos la mayor proporción de abandonos la cuál alcanza un 42%.
+- Para los otros tipos de contrato observamos una tasa de abandono del 11.2% y de 2.8% para contratos de uno y dos años respectivamente.
+- Debía de esperarse este tipo de comportamiento ya que generalmente los clientes que prefieren contratos mensuales son aquellos que no están muy convencidos con el servicio o no quieren sentirse comprometidos generando una relación a largo término que involucra el riesgo de pagar todo el contrato sin saber si realmente estarán satisfechos.
+
+*Variable Internet Service*
+
+
+```python
+plt.figure(figsize = (9,4))
+plt.title('Servicio de Internet')
+barplot_percentages("InternetService", orient = 'h')
+```
+
+&nbsp;
+![](/img/churn_prediction_files/output_65_0.png)
+&nbsp;
+
+
+
+
+```python
+print(customers.groupby('InternetService')['Churn'].value_counts(normalize = True).mul(100).round(2))
+
+
+    InternetService  Churn
+    DSL              No       81.04
+                     Yes      18.96
+    Fiber optic      No       58.11
+                     Yes      41.89
+    No               No       92.60
+                     Yes       7.40
+    Name: Churn, dtype: float64
+```    
+
+- La mayor proporción de abandonos se observa en los clientes que tienen contratado el servicio de fibra óptica. En contraste, los abandonos han sido muy bajos en clientes sin servicio de internet.
+
+*Variable Paperless Billing*
+
+
+```python
+plt.figure(figsize = (9,4))
+plt.title('Tipo de recibo')
+barplot_percentages("PaperlessBilling", orient = 'h')
+```
+
+&nbsp;
+![](/img/churn_prediction_files/output_69_0.png)
+&nbsp;
+
+
+
+```python
+print(customers['PaperlessBilling'].value_counts(normalize = True).mul(100).round(2))
+
+
+    Yes    59.22
+    No     40.78
+    Name: PaperlessBilling, dtype: float64
+```    
+
+- El 59% de los clientes optaron por recibo electrónico y son también quienes más abandonaron la empresa.
+
+&nbsp;
+
+## 3.4. Análisis de Correlación
+
+Algunos modelos se ven perjudicados si incorporan predictores altamente correlacionados. 
+Por esta razón, es conveniente estudiar el grado de correlación entre las variables disponibles.
+
+
+```python
+corr_matrix = customers.corr()
+sns.heatmap(corr_matrix, annot = True)
+plt.show()
+```
+
+&nbsp;
+![](/img/churn_prediction_files/output_74_0.png)
+&nbsp;
+
+- Las variables `tenure` y `TotalCharges` están altamente correlacionadas. Esto es lo que ya se podía observar en los gráficos de densidad mostrados anteriormente. Vamos a eliminar la variable `TotalCharges`ya que no aporta información extra al modelo.
+
+&nbsp;
+
+# 4. Data Cleaning
+
+&nbsp;
+
+## 4.1. Valores Ausentes
+
+La gran mayoría de algoritmos no aceptan observaciones incompletas, por lo que, cuando el set de datos contiene valores ausentes, se puede:
+
+- Eliminar aquellas observaciones que estén incompletas.
+- Eliminar aquellas variables que contengan valores ausentes.
+- Tratar de estimar los valores ausentes empleando el resto de información disponible (imputación).
+
+
+```python
+customers.isnull().sum()
+
+
+    gender               0
+    SeniorCitizen        0
+    Partner              0
+    Dependents           0
+    tenure               0
+    PhoneService         0
+    MultipleLines        0
+    InternetService      0
+    OnlineSecurity       0
+    OnlineBackup         0
+    DeviceProtection     0
+    TechSupport          0
+    StreamingTV          0
+    StreamingMovies      0
+    Contract             0
+    PaperlessBilling     0
+    PaymentMethod        0
+    MonthlyCharges       0
+    TotalCharges        11
+    Churn                0
+    dtype: int64
+```
+
+
+Observamos que tenemos 11 valores nulos en la variable `TotalCharges`. Ya que esta variable es poco informativa vamos a pasar eliminarla por completo.
+
+&nbsp;
+
+## 4.2. Atributos Innecesarios
+
+Al comienzo del análisis hemos eliminado el atributo `CustomerID` y ahora pasaremos a eliminar el resto de variables que son redundantes y no aportan información predictora.
+
+
+```python
+atributos_drop = ['TotalCharges',
+                  'gender',
+                  'StreamingTV',
+                  'StreamingMovies',
+                  'PhoneService'] 
+
+customers_prep = customers.drop(atributos_drop, axis = 1)
+
+print(customers.shape)
+print(customers_prep.shape)
+
+
+    (7043, 20)
+    (7043, 15)
+```    
+
+&nbsp;
+
+## 4.3. Registros Duplicados
+
+Los registros duplicados pueden causar problemas al momento de separar los datos en datos de entrenamiento y de prueba ya que podría ocurrir que aleatoriamente estos registros queden en una sola partición generando que el modelo no ajuste correctamente.
+
+
+```python
+# Contamos cuántos registros duplicados tenemos en el dataset
+# ==========================================================
+dup = customers_prep.duplicated().sum()
+print('Registros duplicados: {}'.format(dup))
+
+# Eliminamos registros duplicados
+# ===============================
+customers_prep.drop_duplicates(inplace = True)
+print(customers_prep.shape)
+```
+
+    Registros duplicados: 60
+    (6983, 15)
+    
+
+&nbsp;
+
+# 5. División Train y Test
+
+Vamos a necesitar separar nuestros datos en un conjunto para entrenar al modelo y otro para probarlo, esto nos va a servir para poder verificar la performance de nuestro modelo con datos que no conoce.
+
+
+```python
+X = customers_prep.drop('Churn', axis = 1)
+y = customers_prep['Churn']
+
+X_train, X_test, y_train, y_test = train_test_split(X,
+                                                    y, 
+                                                    test_size = 0.20, 
+                                                    random_state = 15,
+                                                    stratify = y)
+```
+
+&nbsp;
+
+# 6. Preprocesado
+
+Todo preprocesado de datos debe aprenderse con las observaciones de entrenamiento y luego aplicarse al conjunto de entrenamiento y al de test. Esto es muy importante para no violar la condición de que ninguna información procedente de las observaciones de test participe o influya en el ajuste del modelo.
+
+&nbsp;
+
+## 6.1. Label Encoder
+
+Los modelos predictivos tienen una mejor performance cuando reciben variables numéricas como datos de entrada. Lo que vamos a hacer en este punto en transformar las categorías *Yes* y *No* de la variable `Churn` en *unos* y *ceros* respectivamente.
+
+
+```python
+# Label encoder de la variable objetivo
+le = LabelEncoder()
+le.fit(y_train)
+y_train_prep = le.transform(y_train)
+y_test_prep  = le.transform(y_test)
+```
+
+&nbsp;
+
+## 6.2. One Hot Encoder y Estandarización de Variables.
+
+La binarización (one-hot-encoding) consiste en crear nuevas variables dummy con cada uno de los niveles de las variables cualitativas. Esto es similar al paso anterior pero como tenemos más de dos categorías en cada atributo es preferible utilizar esta técnica. Si etiquetaríamos a la variable `InternetServices` con 1 para *DSL*, 2 para *Fiber Optic* y 3 para *No* el modelo malinterpretaría esto dándoles un cierto orden del tipo *DSL* < *No*. Esto no ocurre si solo se trata de dos categorías.
+
+Otra de las transformaciones que vamos a realizar es la estandarización de las variables numéricas `tenure` y `MonthlyCharges` ya que la escala en la que se miden, así como la magnitud de sus varianzas pueden influir en los resultados del modelo ya que aquellos con mayor magnitud tendrán un mayor peso predictor a pesar de tener menos relación con la variable objetivo.
+
+
+```python
+# OHE y estandarización
+
+numeric_cols = X_train.select_dtypes(include=['float64', 'int64']) \
+               .columns.to_list()
+cat_cols = X_train.select_dtypes(include=['object', 'category']) \
+               .columns.to_list()
+
+preprocessor = ColumnTransformer(
+                   [('scale', StandardScaler(), numeric_cols),
+                    ('onehot', OneHotEncoder(), cat_cols)],
+    remainder='passthrough')
+```
+
+Una vez que se ha definido el objeto ColumnTransformer, con el método fit() se aprenden las transformaciones con los datos de entrenamiento y se aplican a los dos conjuntos con transform().
+
+
+```python
+X_train_prep = preprocessor.fit_transform(X_train)
+X_test_prep  = preprocessor.transform(X_test)
+```
+
+El resultado devuelto por ColumnTransformer es un numpy array, por lo que se pierden los nombres de las columnas. Suele ser interesante poder inspeccionar cómo queda el set de datos tras el preprocesado en formato dataframe.
+
+
+```python
+# Convertimos el output en dataframe y añadimos el nombre de las columnas
+
+encoded_cat = preprocessor.named_transformers_['onehot'].get_feature_names(cat_cols)
+labels = np.concatenate([numeric_cols, encoded_cat])
+
+datos_train_prep = preprocessor.transform(X_train)
+datos_train_prep = pd.DataFrame(datos_train_prep, columns=labels)
+datos_train_prep.info()
+
+
+    <class 'pandas.core.frame.DataFrame'>
+    RangeIndex: 5586 entries, 0 to 5585
+    Data columns (total 35 columns):
+     #   Column                                   Non-Null Count  Dtype  
+    ---  ------                                   --------------  -----  
+     0   tenure                                   5586 non-null   float64
+     1   MonthlyCharges                           5586 non-null   float64
+     2   SeniorCitizen_0                          5586 non-null   float64
+     3   SeniorCitizen_1                          5586 non-null   float64
+     4   Partner_No                               5586 non-null   float64
+     5   Partner_Yes                              5586 non-null   float64
+     6   Dependents_No                            5586 non-null   float64
+     7   Dependents_Yes                           5586 non-null   float64
+     8   MultipleLines_No                         5586 non-null   float64
+     9   MultipleLines_No phone service           5586 non-null   float64
+     10  MultipleLines_Yes                        5586 non-null   float64
+     11  InternetService_DSL                      5586 non-null   float64
+     12  InternetService_Fiber optic              5586 non-null   float64
+     13  InternetService_No                       5586 non-null   float64
+     14  OnlineSecurity_No                        5586 non-null   float64
+     15  OnlineSecurity_No internet service       5586 non-null   float64
+     16  OnlineSecurity_Yes                       5586 non-null   float64
+     17  OnlineBackup_No                          5586 non-null   float64
+     18  OnlineBackup_No internet service         5586 non-null   float64
+     19  OnlineBackup_Yes                         5586 non-null   float64
+     20  DeviceProtection_No                      5586 non-null   float64
+     21  DeviceProtection_No internet service     5586 non-null   float64
+     22  DeviceProtection_Yes                     5586 non-null   float64
+     23  TechSupport_No                           5586 non-null   float64
+     24  TechSupport_No internet service          5586 non-null   float64
+     25  TechSupport_Yes                          5586 non-null   float64
+     26  Contract_Month-to-month                  5586 non-null   float64
+     27  Contract_One year                        5586 non-null   float64
+     28  Contract_Two year                        5586 non-null   float64
+     29  PaperlessBilling_No                      5586 non-null   float64
+     30  PaperlessBilling_Yes                     5586 non-null   float64
+     31  PaymentMethod_Bank transfer (automatic)  5586 non-null   float64
+     32  PaymentMethod_Credit card (automatic)    5586 non-null   float64
+     33  PaymentMethod_Electronic check           5586 non-null   float64
+     34  PaymentMethod_Mailed check               5586 non-null   float64
+    dtypes: float64(35)
+    memory usage: 1.5 MB
+```  
+
+
+```python
+datos_train_prep.head(3)
+```
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<div style="overflow-x:auto;">
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: left;">
+      <th></th>
+      <th>tenure</th>
+      <th>MonthlyCharges</th>
+      <th>SeniorCitizen_0</th>
+      <th>SeniorCitizen_1</th>
+      <th>Partner_No</th>
+      <th>Partner_Yes</th>
+      <th>Dependents_No</th>
+      <th>Dependents_Yes</th>
+      <th>MultipleLines_No</th>
+      <th>MultipleLines_No phone service</th>
+      <th>...</th>
+      <th>TechSupport_Yes</th>
+      <th>Contract_Month-to-month</th>
+      <th>Contract_One year</th>
+      <th>Contract_Two year</th>
+      <th>PaperlessBilling_No</th>
+      <th>PaperlessBilling_Yes</th>
+      <th>PaymentMethod_Bank transfer (automatic)</th>
+      <th>PaymentMethod_Credit card (automatic)</th>
+      <th>PaymentMethod_Electronic check</th>
+      <th>PaymentMethod_Mailed check</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>-0.440119</td>
+      <td>0.827555</td>
+      <td>1.0</td>
+      <td>0.0</td>
+      <td>1.0</td>
+      <td>0.0</td>
+      <td>1.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>...</td>
+      <td>1.0</td>
+      <td>1.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>1.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>1.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>-1.011807</td>
+      <td>-0.343458</td>
+      <td>1.0</td>
+      <td>0.0</td>
+      <td>1.0</td>
+      <td>0.0</td>
+      <td>1.0</td>
+      <td>0.0</td>
+      <td>1.0</td>
+      <td>0.0</td>
+      <td>...</td>
+      <td>0.0</td>
+      <td>1.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>1.0</td>
+      <td>0.0</td>
+      <td>1.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>-0.889303</td>
+      <td>-0.180679</td>
+      <td>1.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>1.0</td>
+      <td>0.0</td>
+      <td>1.0</td>
+      <td>1.0</td>
+      <td>0.0</td>
+      <td>...</td>
+      <td>0.0</td>
+      <td>1.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>1.0</td>
+      <td>1.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+  </tbody>
+</table>
+<p>3 rows × 35 columns</p>
+</div>
+    
+&nbsp;
+
+# 7. Modelado
+
+El siguiente paso tras definir los datos de entrenamiento, es seleccionar el algoritmo que se va a emplear. En este caso vamos a realizar este ejercicio con un modelo de regresión logística.
+
+&nbsp;
+
+## 7.1. Regresión Logística Múltiple
+
+La Regresión Logística Múltiple es un método de regresión que permite estimar la probabilidad de una variable cualitativa binaria en función de un conjunto de predictores que pueden ser tanto continuos como categóricos. Una de las principales aplicaciones de la regresión logística es la de clasificación binaria, en el que las observaciones se clasifican en un grupo u otro dependiendo del valor que tomen las variables empleadas como predictoras.
+
+Es importante tener en cuenta que, aunque la regresión logística permite clasificar, se trata de un modelo de regresión que modela el logaritmo de la probabilidad de pertenecer a cada grupo. La asignación final se hace en función de las probabilidades predichas.
+
+
+```python
+# Modelado
+lr = LogisticRegression()
+lr.fit(X_train_prep, y_train_prep)
+
+y_pred = lr.predict(X_test_prep) 
+
+print('Los resultados son: \n')
+print('Train Accuracy: {:.3f}'.format(lr.score(X_train_prep, y_train_prep)))
+print('Test Accuracy: {:.3f}'.format(lr.score(X_test_prep, y_test_prep)))
+
+    Los resultados son: 
+    
+    Train Accuracy: 0.808
+    Test Accuracy: 0.792
+```    
+
+
+```python
+# Matriz de confusión
+plot_confusion_matrix(lr,
+                     X_test_prep,
+                     y_test_prep,                     
+                     values_format = 'd',
+                     display_labels = ['No se fueron', 'Se fueron'])
+```
+&nbsp;
+![](/img/churn_prediction_files/output_111_1.png)
+&nbsp;
+
+Los resultados del modelo se interpretan de la siguiente manera:
+
+- 908 clientes que hemos predicho que no se iban, efectivamente no se fueron (Verdadero Negativo).
+- 198 clientes que hemos predicho que se iban, efectivamente se han ido (Verdadero Positivo).
+- 120 clientes que hemos predicho que no se iban finalmente se fueron (Falso Positivo).
+- 171 clientes que hemos predicho que se iban finalmente NO se fueron (Falso Negativo).
+
+&nbsp;
+
+## 7.2. Hiperparámetros
+
+Vamos a intentar mejorar la precisión del modelo a partir del ajuste de sus hiperparámetros.
+La forma más común de encontrar los valores óptimos es probando diferentes posibilidades.
+
+
+```python
+# Parámtros del modelo
+solvers = ['newton-cg', 'lbfgs', 'liblinear']
+penalty = ['l2']
+c_values = [100, 10, 1.0, 0.1, 0.01]
+
+# Grid search
+grid = dict(solver  = solvers,
+            penalty = penalty,
+            C       = c_values)
+
+cv = RepeatedStratifiedKFold(n_splits     = 10,
+                             n_repeats    = 3,
+                             random_state = 1)
+
+grid_search = GridSearchCV(estimator   = lr,
+                           param_grid  = grid,
+                           n_jobs      = -1,
+                           cv          = cv,
+                           scoring     = 'accuracy',
+                           error_score = 0)
+
+grid_result = grid_search.fit(X_train_prep,
+                              y_train_prep)
+
+# Resultados
+print('Los resultados son: \n')
+print('Accuracy obtenido: {:.3f}'.format(grid_result.best_score_))
+print('Mejores hiperparámetros encontrados: {}'.format(grid_result.best_params_))
+
+    Los resultados son: 
+    
+    Accuracy obtenida: 0.807
+    Mejores hiperparámetros encontrados: {'C': 0.01, 'penalty': 'l2', 'solver': 'liblinear'}
+    
+```
+
+```python
+lr = LogisticRegression(C       = 0.01,
+                        penalty = 'l2',
+                        solver  = 'liblinear')
+
+lr.fit(X_train_prep, y_train_prep)
+y_pred = lr.predict(X_test_prep) 
+
+print('Los resultados son: \n')
+print('Train Accuracy: {:.3f}'.format(lr.score(X_train_prep, y_train_prep)))
+print('Test Accuracy: {:.3f}'.format(lr.score(X_test_prep, y_test_prep)))
+
+    Los resultados son: 
+    
+    Train Accuracy: 0.806
+    Test Accuracy: 0.793
+```    
+
+
+```python
+# Matriz de confusión
+plot_confusion_matrix(lr,
+                     X_test_prep,
+                     y_test_prep,
+                     values_format = 'd',
+                     display_labels = ['No se fueron', 'Se fueron'])
+```
+
+
+
+
+
+&nbsp;
+![](/img/churn_prediction_files/output_117_1.png)
+&nbsp;
+
+
+El modelo tuneado ha apenas logrado mejorar su capacidad predictora pasando de un accuracy de 0.792 a 0.793.
+
+
+## 7.3. Variables más Influyentes
+
+
+```python
+weights = pd.Series(lr.coef_[0], index = datos_train_prep.columns.values)
+weights.sort_values(ascending = False)
+```
+&nbsp;
+
+   | Variable | Coef. |
+|-|:-:|
+| MonthlyCharges                              | 0.361533 |
+| Contract_Month-to-month                     | 0.302785 |
+| PaymentMethod_Electronic check              | 0.166827 |
+| InternetService_Fiber optic                 | 0.159739 |
+| OnlineSecurity_No                           | 0.144816 |
+| MultipleLines_No phone service              | 0.108258 |
+| TechSupport_No                              | 0.106084 |
+| OnlineBackup_No                             | 0.027953 |
+| SeniorCitizen_1                             | 0.008567 |
+| PaperlessBilling_Yes                       | -0.004416 |
+| DeviceProtection_No                        | -0.017646 |
+| PaymentMethod_Mailed check                 | -0.086178 |
+| Dependents_No                              | -0.093623 |
+| MultipleLines_Yes                          | -0.106192 |
+| DeviceProtection_Yes                       | -0.109238 |
+| Partner_No                                 | -0.115621 |
+| OnlineBackup_Yes                           | -0.154837 |
+| OnlineSecurity_No internet service         | -0.161387 |
+| DeviceProtection_No internet service       | -0.161387 |
+| InternetService_No                         | -0.161387 |
+| OnlineBackup_No internet service           | -0.161387 |
+| TechSupport_No internet service            | -0.161387 |
+| PaymentMethod_Bank transfer (automatic)    | -0.169800 |
+| Partner_Yes                                | -0.172651 |
+| Contract_One year                          | -0.192226 |
+| Dependents_Yes                             | -0.194649 |
+| PaymentMethod_Credit card (automatic)      | -0.199120 |
+| TechSupport_Yes                            | -0.232968 |
+| OnlineSecurity_Yes                         | -0.271700 |
+| PaperlessBilling_No                        | -0.283855 |
+| InternetService_DSL                        | -0.286623 |
+| MultipleLines_No                           | -0.290337 |
+| SeniorCitizen_0                            | -0.296838 |
+| Contract_Two year                          | -0.398831 |
+| tenure                                     | -0.688769 
+
+&nbsp;
+
+Podemos observar que algunas variables tienen una relación positiva y otras negativa con respecto a nuestra variable objetivo. Los clientes que tiene valores negativos son los menos probables a abandonar la empresa mientras que los clientes con valores positivos son los que más probable lo harán. 
+
+&nbsp;
+
+##  7.4. Alternativas de Decisión
+
+Por defecto el modelo considera que si la probabilidad de que un cliente se vaya es mayor que el 50% entonces se le asigna que se irá, caso contrario considerará que se queda. Ahora bien, podríamos pensar que una probabilidad del 49% de que un cliente se vaya sigue siendo muy alta como para no tomar ninguna medida ya que el modelo nos dirá que este cliente no se irá con una probabilidad del 51%. Es aquí donde tenemos que decidir qué tan conservadores seremos dependiendo de la estrategia de marketing, costos y objetivos del negocio. La cuestión es que podemos utilizar un umbral de probabilidades para decidir cuando considerar que un cliente abandonará la empresa. 
+
+Primero debemos hacer un calibrado de las probabilidades que arroja el modelo esto es para mejorar la confianza de que la clasificación predicha es correcta.
+
+
+```python
+# Creación del modelo calibrado
+lr_calib = CalibratedClassifierCV(lr,
+                                  cv     = 3,
+                                  method = 'isotonic')
+
+# Entrenamiento del modelo calibrado
+lr_calib.fit(X_train_prep, y_train_prep)
+
+# Predicción con probabilidades calibradas
+y_pred  = lr_calib.predict_proba(X_test_prep)
+```
+
+Ahora imaginemos que establecemos lanzar una campaña de marketing a todos los clientes que tienen una probabilidad mayor del 40% de irse. Vamos a obtener así la lista de clientes a los que debemos llamar para retener.
+
+
+```python
+# Umbral del 40%
+y_pred_40 = lr_calib.predict_proba(X_test_prep)[:, 1] >= .4
+
+X_test['Target'] = y_pred_40
+X_test.head()
+```
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<div style="overflow-x:auto;">
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>SeniorCitizen</th>
+      <th>Partner</th>
+      <th>Dependents</th>
+      <th>tenure</th>
+      <th>MultipleLines</th>
+      <th>InternetService</th>
+      <th>OnlineSecurity</th>
+      <th>OnlineBackup</th>
+      <th>DeviceProtection</th>
+      <th>TechSupport</th>
+      <th>Contract</th>
+      <th>PaperlessBilling</th>
+      <th>PaymentMethod</th>
+      <th>MonthlyCharges</th>
+      <th>Target</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>3035</th>
+      <td>1</td>
+      <td>Yes</td>
+      <td>No</td>
+      <td>25</td>
+      <td>No</td>
+      <td>Fiber optic</td>
+      <td>No</td>
+      <td>No</td>
+      <td>No</td>
+      <td>No</td>
+      <td>Month-to-month</td>
+      <td>Yes</td>
+      <td>Electronic check</td>
+      <td>69.30</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <th>5869</th>
+      <td>0</td>
+      <td>Yes</td>
+      <td>Yes</td>
+      <td>44</td>
+      <td>Yes</td>
+      <td>Fiber optic</td>
+      <td>No</td>
+      <td>Yes</td>
+      <td>Yes</td>
+      <td>No</td>
+      <td>One year</td>
+      <td>No</td>
+      <td>Electronic check</td>
+      <td>94.40</td>
+      <td>False</td>
+    </tr>
+    <tr>
+      <th>6586</th>
+      <td>0</td>
+      <td>Yes</td>
+      <td>Yes</td>
+      <td>45</td>
+      <td>Yes</td>
+      <td>No</td>
+      <td>No internet service</td>
+      <td>No internet service</td>
+      <td>No internet service</td>
+      <td>No internet service</td>
+      <td>Two year</td>
+      <td>Yes</td>
+      <td>Credit card (automatic)</td>
+      <td>24.65</td>
+      <td>False</td>
+    </tr>
+    <tr>
+      <th>1125</th>
+      <td>1</td>
+      <td>Yes</td>
+      <td>No</td>
+      <td>39</td>
+      <td>Yes</td>
+      <td>Fiber optic</td>
+      <td>No</td>
+      <td>Yes</td>
+      <td>Yes</td>
+      <td>No</td>
+      <td>Month-to-month</td>
+      <td>Yes</td>
+      <td>Electronic check</td>
+      <td>105.65</td>
+      <td>True</td>
+    </tr>
+    <tr>
+      <th>2988</th>
+      <td>0</td>
+      <td>Yes</td>
+      <td>No</td>
+      <td>72</td>
+      <td>Yes</td>
+      <td>Fiber optic</td>
+      <td>Yes</td>
+      <td>Yes</td>
+      <td>Yes</td>
+      <td>No</td>
+      <td>Two year</td>
+      <td>Yes</td>
+      <td>Electronic check</td>
+      <td>109.65</td>
+      <td>False</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+
+# 8. Conclusiones
+
+Hemos desarrollado un modelo de predicción para conocer qué clientes abandonarán la empresa a partir de todos los datos que teníamos hasta el mes pasado. Ahora bien, es momento de poner en funcionamiento la maquinaria de marketing. Nos pasan una lista de nuevos clientes y nos piden que les digamos a quién llamar para ofrecerle mejores servicios ya que si no lo hacemos con anticipación éstos se irán. Incorporamos esta nueva lista a nuestro modelo el cual nos dirá qué clientes tienen una probabilidad mayor del 40% de irse y en consecuencia hay que llamarlos. Está claro que dentro de este grupo habrá clientes que en realidad no se van a ir y están conformes y también ocurrirá que hay clientes que se van a ir y nunca llamaremos por lo que hay que considerar una solución de compromiso entre costo y beneficio.
+
+El modelo también nos ayudó a entender cuáles son las variables más relacionadas con la pérdida de clientes. Esto es de vital importancia para conocer en qué áreas estamos fallando. Por ejemplo deberíamos comenzar llamando a los clientes que pagan sus servicios en forma mensual y tratar de que se pasen a un abono anual a cambio de un descuento o también podríamos invertir en mejorar nuestro servicio de fibra óptica ya que el 40% de los clientes que tienen este servicio se han ido el mes pasado.
+
+Pero es una realidad que también hay muchos factores que hacen que el cliente se vaya y que no conocemos. En este caso no hay alarma que suene y que nos avise que esto ocurrirá y es probablemente porque los clientes se pierden y nadie les pregunta porqué o aún peor, se le pregunta el porqué pero no se registra la razón. 
+
+El ejemplo que dimos en la introducción y que inspiró este análisis es un caso real en el que el cliente decidió irse porque no le resolvieron el problema ya sea por cuestiones burocráticas, malos entendidos o falta de predisposición de alguien en la cadena de responsabilidad. Lo cierto es que fue el mismo gerente del área que lo llamó un sábado por la mañana para que le explique qué había sucedido y para intentar de convencerlo de que no se vaya y que le anularían el cargo, a esta altura el cliente ya estaba desconforme con la empresa y no hubo vuelta atrás. 
+
+Pero todavía estamos a tiempo de sacar algo bueno de esta situación: datos que nos dan información. Porque lo siguiente que tenemos que hacer, como gerente del área, es empezar a registrar cuantos días pasaron desde que un operario debía retirar un equipo. Cada día que pasa sin que el operario lo retire aumenta la probabilidad de que el cliente se vaya y si hubiésemos conocido esta información de antemano el modelo hubiera seleccionado a este cliente para que lo llamen sin importar que lleva 12 años en la compañía o que paga su servicio en forma anual para que le retiren el equipo de inmediato porque es altamente probable de que se vaya. Poder decidir en tiempo real permite realizar acciones para satisfacer las necesidades del cliente al instante y esto es un factor clave que brinda una ventaja competitiva frente al resto de las empresas.
+
+&nbsp;
+
+# 9. Bibliografía
+
+ - Data Wrangling with Python, Jacqueline Kazil & Katharine Jarmul (2016)
+ - www.cienciadedatos.net
+  </div>

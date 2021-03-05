@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>R on Proyectos de Ciencias</title>
+    <link>https://jonatanpace.github.io/categories/r/</link>
+    <description>Recent content in R on Proyectos de Ciencias</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <managingEditor>jonatanpace@gmail.com</managingEditor>
+    <webMaster>jonatanpace@gmail.com</webMaster>
+    <lastBuildDate>Wed, 30 Sep 2020 00:00:00 +0000</lastBuildDate><atom:link href="https://jonatanpace.github.io/categories/r/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Tensiones entre teoría y realidad</title>
+      <link>https://jonatanpace.github.io/post/tensiones-entre-teoria-y-realidad/</link>
+      <pubDate>Wed, 30 Sep 2020 00:00:00 +0000</pubDate>
+      <author>jonatanpace@gmail.com</author>
+      <guid>https://jonatanpace.github.io/post/tensiones-entre-teoria-y-realidad/</guid>
+      <description>pre  code.sourceCode { white-space: pre; position: relative; } pre  code.sourceCode  span { display: inline-block; line-height: 1.25; } pre  code.sourceCode  span:empty { height: 1.2em; } code.sourceCode  span { color: inherit; text-decoration: inherit; } div.sourceCode { margin: 1em 0; } pre.sourceCode { margin: 0; } @media screen { div.sourceCode { overflow: auto; } } @media print { pre  code.sourceCode { white-space: pre-wrap; } pre  code.</description>
+    </item>
+    
+  </channel>
+</rss>

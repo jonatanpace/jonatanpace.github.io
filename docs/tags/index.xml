@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Tags on Proyectos de Ciencias</title>
+    <link>https://jonatanpace.github.io/tags/</link>
+    <description>Recent content in Tags on Proyectos de Ciencias</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <managingEditor>jonatanpace@gmail.com</managingEditor>
+    <webMaster>jonatanpace@gmail.com</webMaster>
+    <lastBuildDate>Mon, 26 Oct 2020 00:00:00 +0000</lastBuildDate><atom:link href="https://jonatanpace.github.io/tags/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Clustering</title>
+      <link>https://jonatanpace.github.io/tags/clustering/</link>
+      <pubDate>Mon, 26 Oct 2020 00:00:00 +0000</pubDate>
+      <author>jonatanpace@gmail.com</author>
+      <guid>https://jonatanpace.github.io/tags/clustering/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Machine Learning</title>
+      <link>https://jonatanpace.github.io/tags/machine-learning/</link>
+      <pubDate>Mon, 26 Oct 2020 00:00:00 +0000</pubDate>
+      <author>jonatanpace@gmail.com</author>
+      <guid>https://jonatanpace.github.io/tags/machine-learning/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>R</title>
+      <link>https://jonatanpace.github.io/tags/r/</link>
+      <pubDate>Mon, 26 Oct 2020 00:00:00 +0000</pubDate>
+      <author>jonatanpace@gmail.com</author>
+      <guid>https://jonatanpace.github.io/tags/r/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Estadística</title>
+      <link>https://jonatanpace.github.io/tags/estad%C3%ADstica/</link>
+      <pubDate>Wed, 30 Sep 2020 00:00:00 +0000</pubDate>
+      <author>jonatanpace@gmail.com</author>
+      <guid>https://jonatanpace.github.io/tags/estad%C3%ADstica/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Python</title>
+      <link>https://jonatanpace.github.io/tags/python/</link>
+      <pubDate>Fri, 14 Aug 2020 00:00:00 +0000</pubDate>
+      <author>jonatanpace@gmail.com</author>
+      <guid>https://jonatanpace.github.io/tags/python/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Regresión Logística</title>
+      <link>https://jonatanpace.github.io/tags/regresi%C3%B3n-log%C3%ADstica/</link>
+      <pubDate>Fri, 14 Aug 2020 00:00:00 +0000</pubDate>
+      <author>jonatanpace@gmail.com</author>
+      <guid>https://jonatanpace.github.io/tags/regresi%C3%B3n-log%C3%ADstica/</guid>
+      <description></description>
+    </item>
+    
+  </channel>
+</rss>

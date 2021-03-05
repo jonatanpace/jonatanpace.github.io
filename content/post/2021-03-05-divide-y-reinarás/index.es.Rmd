@@ -1,0 +1,793 @@
+---
+title: Divide y Reinarás
+subtitle: 'Segmentación de clientes utilizando modelos de machine learning.'
+author: Jonatan Pace
+date: '2020-10-26'
+slug: divide-y-reinaras
+categories: []
+tags: ['R', 'Machine Learning', 'Clustering']
+type: ''
+Description: 'Si tenés la suerte de tener demasiadas prendas para tan poco espacio en el guardarropas entonces estarás familiarizado con las técnicas de agrupamiento, habrás buscado la forma de combinar en cada cajón o sector aquellas que se relacionan y tienen algo en común. Pero cuando los atributos que definen los objetos a clasificar no son tan relacionables a simple vista es cuando necesitamos técnicas más potentes. Veamos como el aprendizaje no supervisado nos ayuda a resolver este tipo de problemas.' 
+image: 'img/portada_customer_segmentation.jpg'
+codefolding_nobutton: false
+codefolding_show: 'show'
+disable_codefolding: false
+output: 
+  blogdown::html_page:
+    toc: true
+    highlight: 'pygments'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, collapse = TRUE)
+```
+ 
+  <div style="text-align: justify">
+# 1. Presentación del Problema
+
+El propósito de este proyecto es aplicar un modelo de machine learning para la clasificación de un grupo de clientes de un centro comercial. Vamos a realizar un análisis de las características que presentan y que les fueron relevadas durante el experimento para intentar responder preguntas del tipo:
+
+- ¿Podemos armar grupos de clientes entre las variables observadas?
+- ¿Cuántos grupos podemos armar?
+- ¿Bajo qué variables se arman estos grupos?
+- ¿Hay relación entre las variables que relevamos?
+- ¿Hay alguna forma informativa de presentar los resultados?
+
+Segmentar a nuestros clientes nos permitirá aplicar una estrategia de venta enfocada en las necesidades de cada grupo actuando de manera más personalizada que si lo haríamos en general.
+Nos enfocaremos en el análisis de clusters, una herramienta de clasificación tan potente como elegante y ampliamente utilizada en marketing y en la industria en general.
+
+&nbsp;
+
+# 2. Descripción del Dataset
+
+El dataset con el que trabajaremos es el *Mall Customer Segmentation Data* el cual puede descargarse de Kaggle y es de uso público. Cada fila de este dataset representa un cliente del centro comercial. Las columnas representan los atributos medidos los cuales se detallan a continuación:
+
+- `CustomerID`: número único de identificación del cliente.
+- `Gender`: *Female* y *Male*.
+- `Age`: edad de los clientes.
+- `Annual Income (k$)`: ingreso anual de los clientes en miles de dolares.
+- `Spending Score (1-100)`: es el puntaje de gasto asignado por el centro comercial de acuerdo al comportamiento de compra del cliente.
+
+&nbsp;
+
+## 2.1. Carga del Dataset
+
+```{r, message = FALSE}
+# # Cargamos los paquetes necesarios
+# ===================
+library(tidyverse)
+library(ggpubr)
+library(GGally)
+library(factoextra)
+library(RColorBrewer)
+library(ggplotify)
+library(hrbrthemes)
+library(dendextend)
+library(kableExtra)
+library(plyr)
+
+# Configuración general de gráficos
+theme_set(theme_classic())
+
+# Cargamos rl Dataset
+# ====================
+clientes <- read_csv('mall.csv')
+clientes %>%
+  kbl(align = 'c') %>%
+  kable_styling() %>% 
+  scroll_box(width = "100%", height = "200px")
+```
+&nbsp;
+
+Vamos a renombrar algunos atributos a fin de simplificar la escritura de los códigos y mejorar su interpretabilidad.
+
+```{r}
+# Renombramos las columnas
+new_colnames <- c('id',
+              'Gender',
+              'Age',
+             'Income',
+             'Score')
+names(clientes) <- new_colnames
+
+clientes %>% glimpse()
+```
+&nbsp;
+
+Vemos que el tipo de la variable `Gender` no es correcto, vamos a transformarla a variable categórica de dos niveles. El resto de los atributos son numéricos lo cual tiene sentido y es acorde a lo que necesitamos.
+
+```{r}
+# Pasamos Gender a variable categórica
+clientes$Gender <- as.factor(clientes$Gender)
+```
+&nbsp;
+
+## 2.2. Resumen Estadístico
+
+Nuestro dataset contiene información de 200 clientes, de los cuales 112 son mujeres y 88 son hombres. Las edades de los mismos se encuentran entre los 18 y los 70 años con ingresos entre 15 mil y 137 mil dolares anuales. El score comprende valores entre 1 y 99.
+
+```{r}
+# Distribucion de las variables
+clientes %>% summary()
+```
+
+
+&nbsp;
+
+## 2.3. Análisis Gráfico
+
+Comenzaremos a explorar los datos de manera gráfica, lo que buscamos es conocer cual es la distribución de los mismos y si se evidencian patrones o relaciones entre los diferentes atributos.
+
+```{r, funcion_graficos}
+# Función para graficar
+# =====================
+
+multi_plot <- function(data_, x_, group_) {     
+ 
+  # Histogram --------------------
+  
+   hist_plot <- ggplot(data = data_,
+         aes(x = x_,
+             fill = group_)) +
+  geom_histogram(alpha = 0.5,
+                 show.legend = FALSE) +
+  scale_fill_manual(values = gender_colors) +
+  labs(title = 
+         paste(deparse(substitute(x_)),
+         deparse(substitute(group_)),
+         sep = " - "),
+       subtitle = "Histogram",
+       x = deparse(substitute(x_)))
+
+# Boxplot ----------------------
+
+  box_plot <- ggplot(data= data_,
+         aes(x = x_,
+             y = group_,
+             fill = group_)) +
+  geom_boxplot(alpha = 0.5, 
+               show.legend = FALSE) +
+  scale_fill_manual(values = gender_colors) +
+  labs(title = '',
+       subtitle = "Boxplot", 
+       x = deparse(substitute(x_)),
+       y = '')
+
+# Density Plot --------------------
+
+  den_plot <- ggplot(data = data_,
+         aes(x = x_,
+             fill = group_)) +
+  geom_density(alpha = 0.5,
+               show.legend = FALSE) +
+  scale_fill_manual(values = gender_colors) +
+  labs(subtitle = "Density Plot", 
+       x = deparse(substitute(x_)))
+
+  ggarrange(hist_plot, 
+          ggarrange(box_plot,
+                    den_plot,
+                    nrow = 2,
+          labels = c("B", "C")),
+          ncol = 2, labels = "A")  
+}
+```
+&nbsp;
+
+### 2.3.1. Distribución por Género
+
+Como vimos anteriormente, en nuestro dataset la mayoría de los clientes son mujeres, las cuales representan el 56% de las observaciones totales frente al 44% de clientes hombres.
+
+```{r, gender_dist, message=FALSE}
+# Gráfico porcentaje de clientes por género
+# ========================================
+gender_colors <- c('#36369c', '#d98600')
+
+clientes %>% 
+  group_by(Gender) %>% 
+  dplyr::summarise(count = n()) %>% 
+  mutate(perc = count/sum(count)*100) %>% 
+  ggplot(aes(x = Gender,
+             y = perc,
+             fill = Gender)) +
+  geom_bar(stat = "identity",
+           alpha = 0.7,
+           show.legend = FALSE,
+           color = 'black') +
+  scale_fill_manual(values = gender_colors) +
+  geom_text(aes(label = paste0(perc,
+                               "%")),
+            vjust = -0.5,
+            color = "black",
+            position = position_dodge(0.9),
+            size = 3.5) +
+  ylim(0, 60) +
+  labs(title = "Gender Distribution",
+       x = "",
+       y = "Percent")
+```
+&nbsp;
+
+### 2.3.2. Distribución por Edad y Género
+
+No observamos que exista diferencia de edad por género. Los clientes se distribuyen entre los 18 y 68 años para ambos sexos con una mediana ubicada entorno a los 35 y 37 años.
+
+```{r}
+# Tabla Edad y Género
+# ===================
+ddply(clientes,
+      'Gender',
+      summarise,
+      min = min(Age),
+      mean = round(mean(Age)),
+      median = median(Age),
+      max = max(Age)) %>% 
+  kbl(align = "c") %>%
+  kable_styling(full_width = F)
+```
+
+```{r, message=FALSE}
+# Gráfico de Edad y Género
+# =========================
+Gender <- clientes$Gender
+Age <- clientes$Age
+
+multi_plot(clientes, Age, Gender)
+```
+&nbsp;
+
+### 2.3.3. Distribución por Ingreso y Género
+
+Tampoco observamos diferencias importantes en los ingresos anuales por género. La media es apenas inferior para el caso de las mujeres con un valor máximo alcanzado de 126 mil dolares anuales mientras que el de los clientes hombres llega a 137 mil dolares.
+
+
+```{r}
+# Tabla Ingreso y Género
+# ===================
+ddply(clientes,
+      'Gender',
+      summarise,
+      min = min(Income),
+      mean = round(mean(Income),1),
+      median = median(Income),
+      max = max(Income)) %>% 
+  kbl(align = "c") %>%
+  kable_styling(full_width = F)
+```
+
+```{r, message=FALSE}
+# Gráfico de Ingreso y Género
+# =========================
+Income <- clientes$Income
+
+multi_plot(clientes, Income, Gender)
+```
+&nbsp;
+
+### 2.3.4. Distribución por Score y Género
+
+El score otorgado es apenas superior en el caso de las mujeres con un mínimo más alto. Igualmente ambos géneros se distribuyen a lo largo de toda la escala.
+
+```{r}
+# Tabla Score y Género
+# ===================
+ddply(clientes,
+      'Gender',
+      summarise,
+      min = min(Score),
+      mean = round(mean(Score),1),
+      median = median(Score),
+      max = max(Score)) %>% 
+  kbl(align = "c") %>%
+  kable_styling(full_width = F)
+```
+
+```{r, message=FALSE}
+# Gráfico de Score y Género
+# =========================
+Score <- clientes$Score
+
+multi_plot(clientes, Score, Gender)
+```
+
+&nbsp;
+
+## 2.4. Análisis de Correlación
+
+No se observa correlación de ningún tipo entre las variables `Score`, `Income` y `Age`.
+En el gráfico A de la figura siguiente se observan diferentes grupos con combinaciones diferentes entre las variables `Income` y `Score`.
+Lo que sí podemos destacar en el gráfico B es que los clientes entre 30 y 60 años son los únicos que pueden superar los 80 mil dolares anuales de ingresos. También podemos ver en el gráfico C que los clientes que superan los 60 puntos de score pertenecen al grupo de menor de 42 años.
+
+```{r, correlation_plot}
+# Correlación entre Income, Score y Age
+# ======================================
+scatter_ans <- clientes %>% 
+  ggplot(aes(x = Income,
+             y = Score,
+             colour = Gender)) +
+  geom_point(size = 2,
+             alpha = 0.6,
+             show.legend = FALSE) +
+  scale_colour_manual(values = gender_colors) +
+  labs(title = 'Scatterplots',
+       subtitle = 'Age - Income - Score')
+
+scatter_aa <- clientes %>% 
+  ggplot(aes(x = Age,
+             y = Income,
+             colour = Gender)) +
+  geom_point(size = 2,
+             alpha = 0.6) +
+  scale_colour_manual(values = gender_colors)
+
+scatter_ags <- clientes %>% 
+  ggplot(aes(x = Age,
+             y = Score,
+             colour = Gender)) +
+  geom_point(size = 2,
+             alpha = 0.6) +
+  scale_colour_manual(values = gender_colors)
+
+ggarrange(scatter_ans, 
+          ggarrange(scatter_aa,
+                    scatter_ags,
+                    nrow = 2,
+                    common.legend = TRUE,
+                    legend = 'right',
+                    labels = c("B",
+                               "C")),
+          ncol = 2, labels = "A")
+```
+&nbsp;
+
+# 3. Feature Engineering
+
+Lo que intentaremos en este punto es ver si una segmentación de los clientes según el ciclo de vida nos muestra información relevante que podamos utilizar para afinar los resultados. Esta forma de segmentar el mercado es muy genérica, pero puede ser de utilidad. Vamos a definir segmentos de clientes según las edades de los mismos los cuales resultan de la siguiente manera:
+
+- *Youth*: es el mercado joven que comprende a clientes entre 17 y 24 años, grandes consumidores de ropa, música, cosméticos y material deportivo.
+
+- *Youth Adult*: es el mercado joven adulto que comprende a clientes entre 25 y 40 años. Son aquellos consumidores que comienzan su carrera, se casan y que tienen un poder adquisitivo mayor que el grupo de jóvenes.
+
+- *Adult*: es el mercado adulto que comprende a clientes entre 41 y 64 años. Suelen ser aquellos que tienen una vida económicamente más constituida y con mayor estabilidad financiera.
+
+- *Senior*: es el mercado de jubilados o retirados que comprende a clientes mayores de 65 años. Son compradores que buscan principalmente el bienestar mediante viajes o productos con efecto en la salud.
+
+Si bien en nuestro dataset no tenemos información acerca de los productos comprados por los clientes como para ver si la clasificación que acabamos de realizar se corresponde con los datos es interesante observar como se distribuyen estos grupos usando la información disponible.
+
+
+```{r, message=FALSE}
+# Agrupamiento de clientes por rango de edades
+# ============================================
+Category <- cut(clientes$Age,
+    breaks = c(17,
+               25,
+               41,
+               65,
+               99),
+    right = FALSE,
+    labels = c('Youth',
+               'Youth Adult',
+               'Adult',
+               'Senior'))
+
+# Agregamos Category a clientes
+clientes['Category'] <- Category
+
+# Gráfico de clientes por grupos de edad
+age_colors <- c('#076622',
+                '#076366',
+                '#072d66',
+                '#2f0766')
+  
+clientes %>% 
+  group_by(Category) %>% 
+  dplyr::summarise(count = n()) %>% 
+  mutate(perc = count/sum(count)*100) %>% 
+  ggplot(aes(x = Category,
+             y = perc,
+             fill = Category)) +
+  geom_bar(stat = "identity",
+           alpha = 0.7,
+           show.legend = FALSE,
+           color = 'black') +
+  scale_fill_manual(values = age_colors) +
+  geom_text(aes(label = paste0(perc,
+                               "%")),
+            vjust = 1,
+            hjust = -0.5,
+            position = position_dodge(0.9),
+            color = "black",
+            size = 3.5) +
+  coord_flip() +
+  ylim(0, 50) +
+  labs(title = "Classification of consumers on the basis of age",
+       subtitle = "Percentage of each category",
+       x = 'Groups',
+       y = "Percent")
+```
+
+Podemos observar que los grupos de adultos y jóvenes adultos representan el 75.5% de nuestros clientes, si bien son los grupos con mayor rango de edad podemos definir que este porcentaje pertenece al rango de entre 25 y 65 años. 
+
+```{r, message=FALSE}
+# Gráficos de violines y boxplot
+# ==============================
+vio_sps <- clientes %>% 
+  ggplot(aes(x = Category,
+             y = Score,
+             fill = Category)) +
+  geom_violin(alpha = 0.5,
+              show.legend = FALSE) +
+  scale_fill_manual(values = age_colors) +
+  geom_boxplot(show.legend = FALSE,
+               width = 0.2,
+               alpha = 0.6) +
+  coord_flip() +
+  labs(subtitle = 'Score by age categoy',
+       y = 'Score',
+       x = '')
+
+vio_anni <- clientes %>% 
+  ggplot(aes(x = Category,
+             y = Income,
+             fill = Category)) +
+  geom_violin(alpha = 0.5, 
+              show.legend = FALSE) +
+  scale_fill_manual(values = age_colors) +
+  geom_boxplot(show.legend = FALSE,
+               width = 0.2,
+               alpha = 0.6) +
+  coord_flip() +
+  theme(axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  labs(subtitle = 'Income by age category',
+       y = 'Income')
+
+ggarrange(vio_sps,
+          vio_anni,
+          nrow = 1,
+          ncol = 2,
+          widths = c(1.3,1))
+```
+
+Vemos que el Score más alto lo alcanzan los grupos más jóvenes, es decir aquellos menores a 40 años. Es interesarte notar que el grupo *Youth* de menores de 25 años tiene la media de ingresos más baja de todos a pesar de un alto Score y esto es posiblemente porque parte de las compras de este grupo son pagadas por sus padres que son los que tiene un ingreso más alto.
+
+&nbsp;
+
+# 4. Preprocesado
+
+Los algoritmos de machine learning funcionan mejor cuando las variables a utilizar tiene una escala similar por lo que vamos a proceder a aplicar una transformación a las variables `Score` e `Income`.
+Debido a que el modelo de clustering que vamos a aplicar funciona midiendo distancias entre diferentes atributos es lógico que éstos sean numéricos por lo que haremos una nueva transformación en la variable `Gender` asignando el valor *0* a los clientes de género femenino y *1* a los clientes de género masculino.  
+
+En la siguiente tabla podemos ver el resultado de las transformaciones aplicadas.
+
+```{r, encoder}
+# Label Encoder - Gender
+# ======================
+clientes_prep <- clientes[2:5]
+
+clientes_prep$Gender <- 
+  if_else(clientes$Gender == 'Female', 0, 1)
+
+# Escalado - Score and Income
+# ==========================
+clientes_prep[2:4] <- scale(clientes_prep[2:4])
+
+clientes_prep %>%
+  kbl(align = 'c') %>%
+  kable_styling() %>% 
+  scroll_box(width = "100%",
+             height = "200px")
+```
+&nbsp;
+
+# 5. Clustering
+
+El análisis de cluster implica el agrupamiento de un determinado número de observaciones con la condición de que estas sean homogéneas con otras observaciones dentro del grupo y heterogéneas con las que están en otros grupos. La idea principal que buscan estos modelos es minimizar la varianza interna (minimizar la diferencia entre objetos del mismo grupo) y maximizar la varianza externa (maximizar la diferencia entre grupos).
+
+Las técnicas de clustering se conocen con el nombre de clasificación automática no supervisada puesto que buscan encontrar relaciones, patrones o grupos entre variables descriptivas dentro de un conjunto de observaciones sin presencia de variable objetivo.
+
+
+&nbsp;
+
+## 5.1. Segmentación con K-Means Clustering
+
+Vamos a utilizar el algoritmo de *K-Means* el cual agrupa las observaciones en K grupos distintos donde K es definido de antemano por el analista. Este algoritmo de optimización encuentra los K mejores grupos de forma que la suma de las varianzas internas de cada uno de ellos sea la mínima posible.
+
+La parte de definir el valor K es un punto muy importante ya que este generalmente responde a una variable ya establecida de antemano dentro del ámbito del negocio. Por ejemplo podemos definir un presupuesto para realizar 4 campañas de marketing diferentes entonces buscaremos a 4 grupos de clientes para lanzarlas, en este caso tenemos K = 4. Otro ejemplo podría ser que tenemos solo 3 personas en asistencia al cliente y queremos asignarles un grupo a cada una, aquí nos interesa encontrar estos 3 grupos, por lo que utilizaremos un K = 3.
+
+Para este análisis vamos a suponer que no tenemos limitaciones en cuanto al número de grupos por lo que dejaremos que sea el mismo modelo que seleccione el mejor minimizando las varianzas internas y maximizando las externas. Utilizaremos el **método del codo** y un análisis visual de los grupos para elegir el K más apropiado.
+
+
+```{r}
+# Función Clustering y gráficos 
+# =============================
+
+# Nro. óptimo de clusters
+clustering_plot <- function(datos_,
+                            centers_) {
+
+  # Nro. óptimo de clusters
+  cluster_num <- fviz_nbclust(datos_,
+             kmeans,
+             method = "wss",
+             k.max = 8) +
+  geom_vline(xintercept = centers_,
+             linetype = 2,
+             color = 'blue') +
+  theme_classic() +
+  labs(title = '',
+       subtitle = 'Optimal K.',
+       x = 'Cluster',
+       y = 'T. Within Sum of Sq.')
+
+k_means <- kmeans(datos_,
+                  centers = centers_,
+                  nstart = 50)
+
+  # Gráfico de clusters
+  cluster_plot <- 
+  fviz_cluster(object =  k_means,
+               data = datos_,
+               show.clust.cent = TRUE,
+               ellipse.type = "euclid",
+               star.plot = TRUE,
+               labelsize = 0) +
+  scale_color_brewer(palette = "Set2") +
+  labs(title = "Clustering K-Means",
+       subtitle = paste(names(datos_)[1],
+                  names(datos_)[2],
+         ifelse(is.na(names(datos_)[3]), '',
+                names(datos_)[3]),
+         ifelse(is.na(names(datos_)[4]), '',
+                names(datos_)[4]),
+         sep = " ")) +
+  theme_light() +
+  theme(legend.position = "none")
+
+# Pasamos a df el vector size de clusters
+df_number <- enframe(k_means$size,
+                     name = "Cluster",
+                     value = "Count")
+
+# Gráfico tamaño de clusters
+  cluster_size <- 
+    ggplot(df_number,
+         aes(x = as.factor(Cluster),
+         y = Count,
+         fill = as.factor(Cluster))) +
+              geom_bar(stat = "identity",
+                       show.legend = FALSE) +
+              scale_fill_brewer(palette = "Set2") +
+              labs(x = 'Cluster',
+                   y = 'Customers')
+  
+  # Resultados del clustering
+  segment <- clientes %>% 
+    cbind(cluster =  k_means$cluster) 
+    
+  ggarrange(cluster_plot, 
+          ggarrange(cluster_num,
+                    cluster_size,
+                    nrow = 2,
+                    common.legend = TRUE,
+                    labels = c("B", "C")),
+          ncol = 2,
+          labels = "A",
+          widths = c(1.4,1))
+}
+
+```
+&nbsp;
+
+### 5.1.1. Edad e Ingreso
+
+El método del codo nos arroja que un K entre 3 y 4 será una buena elección. El modelo asignará a cada cliente de nuestro dataset el grupo al que pertenece.
+
+```{r}
+# Segmentación por Age - Income
+# =============================
+seg_age_income <- clientes_prep[2:3]
+
+clustering_plot(seg_age_income, 
+                centers_ = 3)
+```
+&nbsp;
+
+### 5.1.2. Edad y Score
+
+Para la segmentación de las variables `Age` y `Score` también se observó que una buena elección era tomar un K = 3.
+
+```{r}
+# Segmentación por edad y Score
+# ======================================
+
+seg_age_score <- clientes_prep %>% 
+                 select(Age, Score)
+
+clustering_plot(seg_age_score, 
+                centers_ = 3)
+```
+&nbsp;
+
+### 5.1.3. Ingresos y Score
+
+Para el caso de los atributos `Income` y `Score` era una buena elección tomar un K = 5 ya que graficamente es visibible la existencia de 5 grupos. Sin embargo un K = 4 también hubiese sido una buena elección.
+
+```{r}
+# Segmentación por Income y Spending score
+# =================================================
+seg_in_score <- clientes_prep %>% 
+  select(Income, Score)
+
+clustering_plot(seg_in_score, 
+                centers_ = 5)
+```
+&nbsp;
+
+### 5.1.4. Edad, Ingreso, Score y Género
+
+Para el caso en el que se consideran todas las variables los resultados no son totalmente claros, en este caso un K entre 3 y 5 es la mejor elección.
+
+```{r}
+# Segmentación por Age, Income, Score y Gender
+# ============================================
+clustering_plot(clientes_prep, 
+                centers_ = 4)
+```
+&nbsp;
+
+## 5.2. Segmentación con Hierarchical K-Means Clustering
+
+En este método no se debe especificar de antemano el número K de clusters sino que se elige en forma visual. La idea es hacer cortes horizontales sobre el diagrama y a partir de las ramas interceptadas se define el número de grupos. Subiendo y bajando este corte se puede modificar el número de grupos a obtener. Realizaremos el mismo análisis de K-Means pero con este nuevo método.
+Nuevamente, las líneas de corte son propuestas con el objetivo de mejorar los resultados obtenidos a partir del análisis gráfico.
+
+&nbsp;
+
+### 5.2.1. Edad e Ingreso
+
+```{r, warning = FALSE}
+# Segmentación por Age y Income
+# ====================================
+dend_age_income <- seg_age_income %>% 
+  dist() %>% 
+  hclust() %>% 
+  as.dendrogram()
+
+# K = 3
+par(mar = c(0,0,1,0))
+dend_age_income  %>%
+  set("labels", "") %>%
+  set("branches_k_color",
+      k = 3) %>%
+  plot(axes = FALSE,
+       main = 'K = 3')
+abline(h = 3.5,
+       lty = 2)
+
+# K = 5
+par(mar = c(0,0,1,0))
+dend_age_income  %>%
+  set("labels", "") %>%
+  set("branches_k_color",
+      k = 5) %>%
+  plot(axes = FALSE,
+       main = 'K = 5')
+abline(h = 2.6,
+       lty = 2)
+```
+
+&nbsp;
+
+### 5.2.2. Edad y Score
+
+```{r,message = FALSE, warning=FALSE}
+
+# Segmentación por edad y Score
+# =================================================
+dend_age_score <- seg_age_score %>% 
+  dist() %>%
+  hclust() %>% 
+  as.dendrogram()
+
+# K = 3
+par(mar = c(0,0,1,0))
+dend_age_score  %>%
+  set("labels", "") %>%
+  set("branches_k_color",
+      k = 3) %>%
+  plot(axes = FALSE,
+       main = 'K = 3')
+abline(h = 3.3,
+       lty = 2)
+
+# K = 6
+par(mar = c(0,0,1,0))
+dend_age_score  %>%
+  set("labels", "") %>%
+  set("branches_k_color",
+      k = 6) %>%
+  plot(axes = FALSE,
+       main = 'K = 6')
+abline(h = 2,
+       lty = 2)
+```
+
+&nbsp;
+
+### 5.2.3. Ingreso y Score
+
+```{r}
+# Segmentación por Income y Score
+# =================================================
+dend_in_score <- seg_in_score %>% 
+  dist() %>% 
+  hclust() %>% 
+  as.dendrogram()
+
+# K = 5
+par(mar = c(0,0,1,0))
+dend_in_score  %>%
+  set("labels", "") %>%
+  set("branches_k_color",
+      k = 5) %>%
+  plot(axes = FALSE,
+       main = 'K = 5')
+abline(h = 2.7,
+       lty = 2)
+
+# K = 4
+par(mar = c(0,0,1,0))
+dend_in_score  %>%
+  set("labels", "") %>%
+  set("branches_k_color",
+      k = 4) %>%
+  plot(axes = FALSE,
+       main = 'K = 4')
+abline(h = 3,
+       lty = 2)
+```
+&nbsp;
+
+### 5.2.4. Edad, Ingreso, Score y Género
+```{r}
+# Segmentación por Age, Income, Score y Gender
+# =================================================
+dend_all <- clientes_prep %>% 
+  dist() %>% hclust() %>% 
+  as.dendrogram()
+
+# K = 5
+par(mar = c(0,0,1,0))
+dend_all  %>%
+  set("labels", "") %>%
+  set("branches_k_color",
+      k = 5) %>%
+  plot(axes = FALSE,
+       main = 'K = 5')
+abline(h = 3.5, lty = 2)
+
+# K = 4
+par(mar = c(0,0,1,0))
+dend_all  %>%
+  set("labels", "") %>%
+  set("branches_k_color",
+      k = 4) %>%
+  plot(axes = FALSE,
+       main = 'K = 4')
+abline(h = 4.4, lty = 2)
+```
+&nbsp;
+
+# 6. Conclusiones
+
+En el modelo de aprendizaje no supervisado que hemos utilizado no hay manera de verificar nuestro trabajo porque no sabemos la verdadera respuesta. Esta es justamente una de las dificultades del clustering, la no existencia de un mecanismo universalmente aceptado para realizar la validación cruzada o validar resultados en un conjunto de datos independientes. El output del modelo debe analizarse y validarse en el contexto en el cual se aplica, ¿Cuántos grupos necesito para mi negocio?, ¿Cuál es el mínimo número de grupos que me arroja el modelo?, ¿Conviene armar más o menos de *x* cantidad de grupos? son preguntas que puede responderse en forma muy eficiente con el análisis de clusters. Sin embargo también es una técnica muy conveniente para generar conocimiento a partir de nuevos datos de los cuales no conocemos el comportamiento.
+
+
+&nbsp;
+
+# 7. Bibliografía
+
+- An Introduction to Statistical Learning with Applications in R, Gareth james (2013).
+- www.cienciadedatos.net - Clustering and Headmaps.
+  </div>

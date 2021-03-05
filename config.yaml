@@ -1,0 +1,79 @@
+baseurl: https://jonatanpace.github.io
+DefaultContentLanguage: es
+Publishdir: docs
+title: Proyectos de Ciencias
+theme: beautifulhugo
+metaDataFormat: yaml
+
+pygmentsStyle: trac
+pygmentsUseClasses: yes
+pygmentsCodeFences: yes
+pygmentsCodefencesGuessSyntax: yes
+
+googleAnalytics: "UA-187828027-1"
+
+Frontmatter:
+  lastmod: ["lastmod", ":fileModTime", ":default"]
+
+Params:
+  # Imágenes de la portada principal
+  hideAuthor: yes
+  bigimg: [{src: "img/points.png"}, 
+          {src: "img/lines.png"}, 
+          {src: "img/box.png"}]
+  comments: yes
+  commit: no
+  dateFormat: 02-01-2006
+  delayDisqus: no
+  #favicon: img/favicon.ico
+  #logo: img/avatar-icon.png
+  mainSections:
+    - post
+    - posts
+  readingTime: no
+  rss: no
+  showRelatedPosts: yes
+  socialShare: yes
+  subtitle: Proyectos de estadística, ciencia de datos y Machine Learning con R y Python.
+  useHLJS: yes
+  wordCount: no
+Author:
+  email: jonatanpace@gmail.com
+  github: jonatanpace
+  kaggle: jonatanpace
+  linkedin: jonatanpace
+  #500px: username
+  #bandcamp: username
+  #bitbucket: username
+  #codepen: username
+  #facebook: username
+  #gitlab: username
+  #instagram: username
+  #itchio: username
+  #mastodon: url
+  #name: Some Person
+  #paypal: username
+  #reddit: username
+  #slack: username
+  #snapchat: username
+  #soundcloud: username
+  #spotify: username
+  #stackoverflow: users/XXXXXXX/username
+  #telegram: username
+  #twitter: username
+  #vk: username
+  #website: yourwebsite.com
+  #weibo: username
+  #xing: username
+  #youtube: user/username
+menu:
+  main:
+    - name: Blog
+      url: ''
+      weight: 1
+    - name: Tags
+      url: tags
+      weight: 2
+    - name: About me
+      url: page/about/
+      weight: 3
